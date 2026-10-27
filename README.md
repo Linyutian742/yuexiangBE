@@ -23,10 +23,12 @@
 
 | 设置项 | 值 |
 | --- | --- |
-| 框架预设（Framework preset） | None |
-| 构建命令（Build command） | 留空 |
+| 框架预设（Framework preset） | **不选任何框架**（保持默认项；中文界面可能显示为「无」） |
+| 构建命令（Build command） | `exit 0`（相当于什么都不做；留空也可以） |
 | 构建输出目录（Build output directory） | `frontend` |
 | 根目录（Root directory） | 仓库根 |
+
+**框架预设不要挑框架**：选 Next.js (Static HTML Export)、Nuxt.js 这类条目会连带把构建命令改成 `npx next build`、`npm run build`，输出目录改成 `out`、`dist` —— 本仓库没有这些构建步骤，会直接构建失败。列表里若真找不到「不选/无」这一项，就保持它当前选中的默认值不动。
 
 `functions/` 不需要构建，Pages 会自动识别并打包。
 

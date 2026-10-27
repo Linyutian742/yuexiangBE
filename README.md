@@ -30,6 +30,8 @@
 
 `functions/` 不需要构建，Pages 会自动识别并打包。
 
+> **别选错流程**：要创建的是 **Pages** 项目（Workers 和 Pages → 创建应用程序 → **Pages** → 连接到 Git）。如果界面出现「部署命令」「预览命令」（默认 `npx wrangler deploy` / `npx wrangler preview`），说明进的是 **Workers 构建**流程而不是 Pages —— 本仓库的 `functions/` 结构在那边用不了，返回上一步改选 Pages。
+
 ## 绑定与环境变量（控制台配置）
 
 | 名称 | 类型 | 用途 |

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>打手接单 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.booster-order-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.booster-order-card .order-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.booster-order-card .order-label {
+    color: #64748b;
+    min-width: 80px;
+}
+.booster-order-card .order-value {
+    color: #e2e8f0;
+    text-align: right;
+    flex: 1;
+}
+.booster-tab-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2a2a3e;
+}
+.booster-tab {
+    padding: 10px 24px;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: 15px;
+}
+.booster-tab.active {
+    color: #a855f7;
+    border-bottom-color: #a855f7;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div id="booster-content">
+        <div class="form-title" style="margin-bottom:20px;">打手接单</div>
+
+        <div class="booster-tab-bar">
+            <div class="booster-tab active" onclick="switchBoosterTab('available')" id="btab-available">待接订单</div>
+            <div class="booster-tab" onclick="switchBoosterTab('mine')" id="btab-mine">我的订单</div>
+            <div class="booster-tab" onclick="switchBoosterTab('reviews')" id="btab-reviews">我的评价</div>
+        </div>
+
+        <!-- Available orders -->
+        <div id="section-available">
+            <div style="margin-bottom:12px;">
+                <button class="btn btn-secondary btn-small" onclick="loadBoosterOrders()">刷新</button>
+            </div>
+            <div id="available-list"></div>
+        </div>
+
+        <!-- My orders -->
+        <div id="section-mine" class="hidden">
+            <div style="margin-bottom:12px;">
+                <button class="btn btn-secondary btn-small" onclick="loadBoosterOrders()">刷新</button>
+            </div>
+            <div id="mine-list"></div>
+        </div>
+
+        <!-- My reviews -->
+        <div id="section-reviews" class="hidden">
+            <div style="margin-bottom:12px;">
+                <button class="btn btn-secondary btn-small" onclick="loadBoosterReviews()">刷新</button>
+            </div>
+            <div id="reviews-list"></div>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+var currentBoosterTab = 'available';
+
+function getToken() {
+    var user = getUser();
+    return user ? user.token : '';
+}
+
+function checkBoosterAccess() {
+    // 登录态不在加载期校验，也不做轮询；权限由写操作接口在服务端验一次
+    var token = getToken();
+    if (!token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+function switchBoosterTab(tab) {
+    currentBoosterTab = tab;
+    var sections = ['available', 'mine', 'reviews'];
+    for (var i = 0; i < sections.length; i++) {
+        var el = document.getElementById('section-' + sections[i]);
+        var tabEl = document.getElementById('btab-' + sections[i]);
+        if (sections[i] === tab) {
+            el.className = '';
+            tabEl.className = 'booster-tab active';
+        } else {
+            el.className = 'hidden';
+            tabEl.className = 'booster-tab';
+        }
+    }
+    if (tab === 'reviews') {
+        loadBoosterReviews();
+    }
+}
+
+function loadBoosterOrders() {
+    ajaxGet('/api/booster/orders', function (resp) {
+        var availDiv = document.getElementById('available-list');
+        var mineDiv = document.getElementById('mine-list');
+
+        if (!resp.success) {
+            availDiv.innerHTML = '<p style="color:#64748b;">加载失败</p>';
+            mineDiv.innerHTML = '';
+            return;
+        }
+
+        // Available orders
+        var html = '';
+        if (resp.available.length === 0) {
+            html = '<p style="color:#64748b;text-align:center;padding:20px;">暂无待接订单</p>';
+        } else {
+            for (var i = 0; i < resp.available.length; i++) {
+                var o = resp.available[i];
+                html += '<div class="booster-order-card">';
+                html += '<div class="order-row"><span class="order-label">订单号</span><span class="order-value">#' + o.id + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">点单人</span><span class="order-value">' + escapeHtml(o.username) + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">商品</span><span class="order-value">' + escapeHtml(o.product_title || '') + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">游戏ID</span><span class="order-value">' + escapeHtml(o.game_id || '') + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">区服</span><span class="order-value">' + escapeHtml(o.server_area || '') + '</span></div>';
+                if (o.designated_booster) {
+                    html += '<div class="order-row"><span class="order-label">指定打手</span><span class="order-value" style="color:#f59e0b;">' + escapeHtml(o.designated_booster) + '</span></div>';
+                }
+                if (o.message) {
+                    html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(o.message) + '</span></div>';
+                }
+                html += '<div class="order-row"><span class="order-label">下单时间</span><span class="order-value">' + escapeHtml(o.submit_time || '') + '</span></div>';
+                html += '<div style="margin-top:10px;"><button class="btn btn-primary btn-small" onclick="acceptOrder(' + o.id + ')">接单</button></div>';
+                html += '</div>';
+            }
+        }
+        availDiv.innerHTML = html;
+
+        // My orders
+        html = '';
+        if (resp.my_orders.length === 0) {
+            html = '<p style="color:#64748b;text-align:center;padding:20px;">暂无已接订单</p>';
+        } else {
+            for (var i = 0; i < resp.my_orders.length; i++) {
+                var o = resp.my_orders[i];
+                var statusText, statusColor;
+                if (o.status === 'accepted') {
+                    statusText = '进行中';
+                    statusColor = '#f59e0b';
+                } else if (o.status === 'completed') {
+                    statusText = '已完成';
+                    statusColor = '#22c55e';
+                } else {
+                    statusText = o.status;
+                    statusColor = '#64748b';
+                }
+                html += '<div class="booster-order-card">';
+                html += '<div class="order-row"><span class="order-label">订单号</span><span class="order-value">#' + o.id + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">点单人</span><span class="order-value">' + escapeHtml(o.username) + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">商品</span><span class="order-value">' + escapeHtml(o.product_title || '') + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">游戏ID</span><span class="order-value">' + escapeHtml(o.game_id || '') + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">区服</span><span class="order-value">' + escapeHtml(o.server_area || '') + '</span></div>';
+                if (o.message) {
+                    html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(o.message) + '</span></div>';
+                }
+                html += '<div class="order-row"><span class="order-label">下单时间</span><span class="order-value">' + escapeHtml(o.submit_time || '') + '</span></div>';
+                html += '<div class="order-row"><span class="order-label">状态</span><span class="order-value" style="color:' + statusColor + ';">' + statusText + '</span></div>';
+                if (o.status === 'accepted') {
+                    html += '<div style="margin-top:10px;">';
+                    html += '<button class="btn btn-success btn-small" onclick="completeOrder(' + o.id + ')">标记完成</button>';
+                    html += ' <button class="btn btn-danger btn-small" onclick="cancelOrder(' + o.id + ')">取消订单</button>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+        }
+        mineDiv.innerHTML = html;
+    });
+}
+
+function acceptOrder(id) {
+    if (!confirm('确定接此订单?')) return;
+    ajaxPost('/api/booster/accept', { token: getToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '接单成功', 'success');
+            loadBoosterOrders();
+        } else {
+            showToast(resp.msg || '接单失败', 'error');
+        }
+    });
+}
+
+function completeOrder(id) {
+    if (!confirm('确定标记此订单为已完成?')) return;
+    ajaxPost('/api/booster/complete', { token: getToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '已标记完成', 'success');
+            loadBoosterOrders();
+        } else {
+            showToast(resp.msg || '操作失败', 'error');
+        }
+    });
+}
+
+function cancelOrder(id) {
+    if (!confirm('确定取消此订单? 取消后订单将回到待接列表。')) return;
+    ajaxPost('/api/booster/cancel', { token: getToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '已取消', 'success');
+            loadBoosterOrders();
+        } else {
+            showToast(resp.msg || '取消失败', 'error');
+        }
+    });
+}
+
+function loadBoosterReviews() {
+    var div = document.getElementById('reviews-list');
+    div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">加载中...</p>';
+    ajaxGet('/api/booster/reviews', function (resp) {
+        if (!resp.success) {
+            div.innerHTML = '<p style="color:#64748b;text-align:center;">加载失败</p>';
+            return;
+        }
+        var reviews = resp.reviews || [];
+        if (reviews.length === 0) {
+            div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">暂无评价</p>';
+            return;
+        }
+        var html = '';
+        var totalStars = 0;
+        for (var i = 0; i < reviews.length; i++) {
+            var rv = reviews[i];
+            totalStars += rv.stars;
+            var starsHtml = '';
+            for (var s = 0; s < 5; s++) {
+                if (s < rv.stars) {
+                    starsHtml += '<span style="color:#fbbf24;">&#9733;</span>';
+                } else {
+                    starsHtml += '<span style="color:#2a2a3e;">&#9733;</span>';
+                }
+            }
+            html += '<div class="booster-order-card">';
+            html += '<div class="order-row"><span class="order-label">评价人</span><span class="order-value">' + escapeHtml(rv.reviewer_name || '') + '</span></div>';
+            html += '<div class="order-row"><span class="order-label">评分</span><span class="order-value" style="font-size:18px;">' + starsHtml + '</span></div>';
+            if (rv.comment) {
+                html += '<div class="order-row"><span class="order-label">评价内容</span><span class="order-value">' + escapeHtml(rv.comment) + '</span></div>';
+            }
+            html += '<div class="order-row"><span class="order-label">评价时间</span><span class="order-value">' + (rv.review_time || '') + '</span></div>';
+            html += '</div>';
+        }
+        var avg = (totalStars / reviews.length).toFixed(1);
+        var summary = '<div style="background:#1a1a2e;border:1px solid #2a2a3e;border-radius:8px;padding:16px;margin-bottom:12px;text-align:center;">';
+        summary += '<div style="color:#fbbf24;font-size:28px;">' + avg + ' &#9733;</div>';
+        summary += '<div style="color:#64748b;font-size:13px;margin-top:4px;">共 ' + reviews.length + ' 条评价</div>';
+        summary += '</div>';
+        div.innerHTML = summary + html;
+    });
+}
+
+initPage(function () {
+    if (!checkBoosterAccess()) return;
+    loadBoosterOrders();
+});
+</script>
+</body>
+</html>

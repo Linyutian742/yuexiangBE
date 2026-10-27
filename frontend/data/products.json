@@ -1,0 +1,47 @@
+{
+  "success": true,
+  "products": [
+    {
+      "id": 1,
+      "title": "1元保底150万",
+      "price": "1",
+      "description": "保底150万，稳过保底，超值入门"
+    },
+    {
+      "id": 2,
+      "title": "2元保底350万",
+      "price": "2",
+      "description": "保底350万，中段速上，性价比高"
+    },
+    {
+      "id": 3,
+      "title": "3元保底500万",
+      "price": "3",
+      "description": "保底500万，高分段位，专业代打"
+    },
+    {
+      "id": 4,
+      "title": "5毛保底100万",
+      "price": "0.5",
+      "description": "保底100万，低价体验，快速开局"
+    },
+    {
+      "id": 7,
+      "title": "全图出5鸡",
+      "price": "4",
+      "description": "全图出5鸡，战术大师，全程直播可查"
+    },
+    {
+      "id": 8,
+      "title": "10元899万送金枪",
+      "price": "10",
+      "description": "899万送金枪，高分段位，豪华套餐"
+    },
+    {
+      "id": 9,
+      "title": "6元保活单",
+      "price": "6",
+      "description": "保活单，保证存活，安全无忧"
+    }
+  ]
+}

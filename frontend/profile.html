@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>个人主页 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.profile-action-btn {
+    display: block;
+    width: 100%;
+    padding: 14px 16px;
+    margin-top: 10px;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #e2e8f0;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    -webkit-transition: all 0.2s;
+    transition: all 0.2s;
+}
+.profile-action-btn:active {
+    background: #2a2a3e;
+}
+.profile-action-btn .pa-arrow {
+    float: right;
+    color: #64748b;
+}
+.hist-order-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+.star-rating {
+    font-size: 32px;
+    letter-spacing: 4px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.star-rating .star {
+    color: #2a2a3e;
+    -webkit-transition: color 0.15s;
+    transition: color 0.15s;
+}
+.star-rating .star.active {
+    color: #fbbf24;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="profile-container">
+        <div class="profile-avatar">&#127919;</div>
+        <div class="profile-info-row">
+            <span class="profile-info-label">用户名</span>
+            <span class="profile-info-value" id="p-username">加载中...</span>
+        </div>
+        <div class="profile-info-row">
+            <span class="profile-info-label">UID</span>
+            <span class="profile-info-value" id="p-uid">加载中...</span>
+        </div>
+        <div class="profile-info-row">
+            <span class="profile-info-label">注册时间</span>
+            <span class="profile-info-value" id="p-regtime">加载中...</span>
+        </div>
+        <div class="profile-info-row">
+            <span class="profile-info-label">账号状态</span>
+            <span class="profile-info-value" id="p-status">加载中...</span>
+        </div>
+
+        <div style="margin-top:24px;">
+            <button class="profile-action-btn" onclick="showOrdersModal()">
+                历史订单 <span class="pa-arrow">&rsaquo;</span>
+            </button>
+            <button class="profile-action-btn" onclick="showReportsModal()">
+                我的举报 <span class="pa-arrow">&rsaquo;</span>
+            </button>
+        </div>
+
+        <button class="btn btn-secondary" style="width:100%;margin-top:16px;" onclick="showChangePassword()">修改密码</button>
+        <button class="btn btn-danger" style="width:100%;margin-top:8px;" onclick="logout()">退出登录</button>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/captcha.js"></script>
+<script>
+var profileData = null;
+
+function loadProfile() {
+    var user = getUser();
+    if (!user || !user.token) {
+        window.location.href = 'login.html';
+        return;
+    }
+    if (user.username) {
+        document.getElementById('p-username').textContent = user.username;
+    }
+    if (user.uid) {
+        document.getElementById('p-uid').textContent = user.uid;
+    }
+
+    ajaxGet('/api/profile', function (resp) {
+        if (!resp.success) {
+            if (resp.msg === '账号已封禁') {
+                showToast('账号已封禁', 'error');
+                clearUser();
+                setTimeout(function () { window.location.href = 'login.html'; }, 1500);
+            } else {
+                showToast('登录已过期，请重新登录', 'error');
+                clearUser();
+                setTimeout(function () { window.location.href = 'login.html'; }, 1500);
+            }
+            return;
+        }
+        profileData = resp;
+        var p = resp.profile;
+        document.getElementById('p-username').textContent = p.username;
+        document.getElementById('p-uid').textContent = p.uid;
+        document.getElementById('p-regtime').textContent = p.reg_time;
+        var statusEl = document.getElementById('p-status');
+        if (p.status === 'yes') {
+            statusEl.textContent = '正常';
+            statusEl.style.color = '#22c55e';
+        } else {
+            statusEl.textContent = '封禁';
+            statusEl.style.color = '#ef4444';
+        }
+    });
+}
+
+function statusText(s) {
+    if (s === 'pending') return '待核对';
+    if (s === 'verified') return '已通过';
+    if (s === 'accepted') return '进行中';
+    if (s === 'completed') return '已完成';
+    if (s === 'rejected') return '已驳回';
+    return s;
+}
+
+function statusClass(s) {
+    if (s === 'verified' || s === 'completed') return 'order-status-verified';
+    if (s === 'rejected') return 'order-status-rejected';
+    return 'order-status-pending';
+}
+
+function showOrdersModal() {
+    if (!profileData) {
+        showToast('数据加载中，请稍后', 'error');
+        return;
+    }
+    var orders = profileData.orders || [];
+    var html = '';
+    if (orders.length === 0) {
+        html = '<p style="color:#64748b;text-align:center;padding:20px 0;">暂无订单</p>';
+    } else {
+        for (var i = 0; i < orders.length; i++) {
+            var o = orders[i];
+            html += '<div class="hist-order-card">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+            html += '<span style="color:#e2e8f0;">' + (o.product_title || '商品') + '</span>';
+            html += '<span class="' + statusClass(o.status) + '">' + statusText(o.status) + '</span>';
+            html += '</div>';
+            html += '<div style="color:#64748b;font-size:12px;margin-top:4px;">' + (o.submit_time || '') + '</div>';
+            if (o.accepted_booster) {
+                html += '<div style="color:#94a3b8;font-size:12px;margin-top:4px;">接单打手：' + o.accepted_booster + '</div>';
+            }
+            if (o.status === 'rejected' && o.reject_reason) {
+                html += '<div style="color:#ef4444;font-size:12px;margin-top:4px;">驳回理由：' + o.reject_reason + '</div>';
+            }
+            if (o.status === 'completed') {
+                if (o.has_review) {
+                    var stars = '';
+                    for (var st = 0; st < o.review_stars; st++) { stars += '&#11088;'; }
+                    html += '<div style="margin-top:8px;font-size:13px;color:#fbbf24;">已评价 ' + stars + '</div>';
+                } else if (o.can_review) {
+                    html += '<button class="btn btn-primary btn-small" style="margin-top:8px;width:100%;" onclick="showReviewModal(' + o.id + ', \'' + (o.accepted_booster || '') + '\', \'' + (o.booster_uid || '') + '\')">评价</button>';
+                }
+            }
+            html += '</div>';
+        }
+    }
+    showModal('历史订单', html);
+}
+
+function showReportsModal() {
+    if (!profileData) {
+        showToast('数据加载中，请稍后', 'error');
+        return;
+    }
+    var reports = profileData.reports || [];
+    var html = '';
+    if (reports.length === 0) {
+        html = '<p style="color:#64748b;text-align:center;padding:20px 0;">暂无举报记录</p>';
+    } else {
+        for (var i = 0; i < reports.length; i++) {
+            var r = reports[i];
+            var rStatus, rClass;
+            if (r.status === 'pending') { rStatus = '待处理'; rClass = 'order-status-pending'; }
+            else if (r.status === 'handled') { rStatus = '已通过'; rClass = 'order-status-verified'; }
+            else { rStatus = '不通过'; rClass = 'order-status-rejected'; }
+            html += '<div class="hist-order-card">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+            html += '<span style="color:#e2e8f0;">被举报人：' + (r.target_id || '') + '</span>';
+            html += '<span class="' + rClass + '">' + rStatus + '</span>';
+            html += '</div>';
+            html += '<div style="color:#94a3b8;font-size:12px;margin-top:4px;">举报原因：' + (r.reason || '') + '</div>';
+            html += '<div style="color:#64748b;font-size:12px;margin-top:4px;">' + (r.submit_time || '') + '</div>';
+            if (r.status === 'rejected' && r.reject_reason) {
+                html += '<div style="color:#ef4444;font-size:12px;margin-top:4px;">驳回原因：' + r.reject_reason + '</div>';
+            }
+            html += '</div>';
+        }
+    }
+    showModal('我的举报', html);
+}
+
+var reviewStars = 0;
+var reviewOrderId = 0;
+var reviewBoosterName = '';
+var reviewBoosterUid = '';
+
+function showReviewModal(oid, bname, buid) {
+    reviewStars = 0;
+    reviewOrderId = oid;
+    reviewBoosterName = bname;
+    reviewBoosterUid = buid;
+    var html = '';
+    html += '<div style="text-align:center;margin-bottom:16px;">';
+    html += '<div style="color:#94a3b8;font-size:13px;margin-bottom:6px;">打手：' + bname + '</div>';
+    html += '<div class="star-rating" id="star-rating">';
+    html += '<span class="star" onclick="setStar(1)">&#9733;</span>';
+    html += '<span class="star" onclick="setStar(2)">&#9733;</span>';
+    html += '<span class="star" onclick="setStar(3)">&#9733;</span>';
+    html += '<span class="star" onclick="setStar(4)">&#9733;</span>';
+    html += '<span class="star" onclick="setStar(5)">&#9733;</span>';
+    html += '</div>';
+    html += '<div id="star-text" style="color:#64748b;font-size:13px;margin-top:6px;">点击星星评分</div>';
+    html += '</div>';
+    html += '<div class="form-group"><textarea class="form-input" id="review-comment" rows="3" placeholder="写点什么..." style="resize:none;"></textarea></div>';
+    html += '<button class="btn btn-primary" style="width:100%;" onclick="submitReview()">提交评价</button>';
+    showModal('评价打手', html);
+}
+
+function setStar(n) {
+    reviewStars = n;
+    var stars = document.getElementById('star-rating').getElementsByClassName('star');
+    for (var i = 0; i < stars.length; i++) {
+        if (i < n) {
+            stars[i].className = 'star active';
+        } else {
+            stars[i].className = 'star';
+        }
+    }
+    var txt = '';
+    if (n === 1) txt = '1星 - 差';
+    else if (n === 2) txt = '2星 - 一般';
+    else if (n === 3) txt = '3星 - 还行';
+    else if (n === 4) txt = '4星 - 满意';
+    else if (n === 5) txt = '5星 - 非常满意';
+    document.getElementById('star-text').textContent = txt;
+}
+
+function submitReview() {
+    if (reviewStars === 0) {
+        showToast('请先选择评分', 'error');
+        return;
+    }
+    var comment = document.getElementById('review-comment').value;
+    var user = getUser();
+    if (!user || !user.token) {
+        closeModal();
+        window.location.href = 'login.html';
+        return;
+    }
+    ajaxPost('/api/order/review', {
+        token: user.token,
+        order_id: reviewOrderId,
+        stars: reviewStars,
+        comment: comment,
+        booster_name: reviewBoosterName,
+        booster_uid: reviewBoosterUid
+    }, function (resp) {
+        if (resp.success) {
+            closeModal();
+            showToast('评价成功', 'success');
+            loadProfile();
+            setTimeout(function () {
+                if (profileData) showOrdersModal();
+            }, 800);
+        } else {
+            showToast(resp.msg || '评价失败', 'error');
+        }
+    });
+}
+
+function logout() {
+    clearUser();
+    showToast('已退出登录', 'success');
+    setTimeout(function () {
+        window.location.href = 'login.html';
+    }, 1000);
+}
+
+function showChangePassword() {
+    var html = '';
+    html += '<div class="form-group"><label>原密码</label><input type="password" class="form-input" id="cp-old" placeholder="输入原密码"></div>';
+    html += '<div class="form-group"><label>新密码</label><input type="password" class="form-input" id="cp-new" placeholder="输入新密码"></div>';
+    html += '<div class="form-group"><label>确认新密码</label><input type="password" class="form-input" id="cp-confirm" placeholder="再次输入新密码"></div>';
+    html += '<div id="captcha-container-cp"></div>';
+    html += '<button class="btn btn-primary" style="width:100%;" onclick="doChangePassword()">确认修改</button>';
+    showModal('修改密码', html);
+    CaptchaManager.load('captcha-container-cp');
+}
+
+function doChangePassword() {
+    var user = getUser();
+    if (!user || !user.token) {
+        closeModal();
+        window.location.href = 'login.html';
+        return;
+    }
+    var oldPwd = document.getElementById('cp-old').value;
+    var newPwd = document.getElementById('cp-new').value;
+    var confirmPwd = document.getElementById('cp-confirm').value;
+
+    if (!oldPwd || !newPwd) {
+        showToast('密码不能为空', 'error');
+        return;
+    }
+    if (newPwd !== confirmPwd) {
+        showToast('两次输入的新密码不一致', 'error');
+        return;
+    }
+    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container-cp');
+    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container-cp');
+    if (!captchaAnswer) {
+        showToast('请完成验证', 'error');
+        return;
+    }
+
+    ajaxPost('/api/change_password', {
+        token: user.token,
+        uid: user.uid,
+        old_password: oldPwd,
+        new_password: newPwd,
+        captcha_session: captchaSession,
+        captcha_answer: captchaAnswer
+    }, function (resp) {
+        if (resp.success) {
+            closeModal();
+            showToast('修改成功，请重新登录', 'success');
+            clearUser();
+            setTimeout(function () {
+                window.location.href = 'login.html';
+            }, 1500);
+        } else {
+            showToast(resp.msg || '操作失败', 'error');
+            CaptchaManager.load('captcha-container-cp');
+        }
+    });
+}
+
+initPage(loadProfile);
+</script>
+</body>
+</html>

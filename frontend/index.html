@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>悦翔电竞 - 和平精英代练接单平台</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+/* 首页入场：已移除开屏视频，改为纯 CSS 缓缓淡入（无需 video/ 目录） */
+
+/* 深色底缓缓亮起 */
+.index-bg {
+    min-height: 100vh;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 70%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: yxFadeIn 1.8s ease-in-out both;
+}
+
+@keyframes yxFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 标题 -> 副标题 -> 按钮 -> 底部小字，依次缓缓浮入 */
+.index-bg .index-title {
+    animation: yxFadeUp 1.2s ease-out 0.35s both;
+}
+.index-bg .index-subtitle {
+    animation: yxFadeUp 1.2s ease-out 0.7s both;
+}
+.index-bg .index-btn {
+    animation: yxFadeUp 1.2s ease-out 1.05s both;
+}
+.index-bg .index-btn-join {
+    animation: yxFadeUp 1.2s ease-out 1.4s both;
+}
+.index-bg .index-decoration {
+    animation: yxFadeUp 1.2s ease-out 1.75s both;
+}
+
+@keyframes yxFadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.index-title {
+    font-size: 48px;
+    font-weight: bold;
+    color: #a855f7;
+    text-shadow: 0 0 30px rgba(168,85,247,0.6), 0 0 60px rgba(168,85,247,0.3);
+    letter-spacing: 8px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+.index-subtitle {
+    color: #64748b;
+    font-size: 16px;
+    margin-bottom: 48px;
+    text-align: center;
+}
+.index-btn {
+    padding: 18px 56px;
+    font-size: 22px;
+    background: linear-gradient(135deg, #a855f7, #8b5cf6);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(168,85,247,0.4);
+    transition: box-shadow 0.3s;
+    font-family: inherit;
+}
+.index-btn:hover {
+    box-shadow: 0 0 50px rgba(168,85,247,0.6);
+}
+.index-btn-join {
+    margin-top: 16px;
+    padding: 14px 40px;
+    font-size: 18px;
+    background: transparent;
+    border: 2px solid #a855f7;
+    color: #a855f7;
+    box-shadow: none;
+}
+.index-btn-join:hover {
+    background: rgba(168,85,247,0.1);
+    box-shadow: 0 0 30px rgba(168,85,247,0.3);
+}
+.index-decoration {
+    margin-top: 60px;
+    color: #2a2a3e;
+    font-size: 12px;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+<div class="index-bg">
+    <div class="index-title">悦翔电竞</div>
+    <div class="index-subtitle">和平精英专业代练接单平台</div>
+    <button class="index-btn" onclick="window.location.href='products.html'">立刻点单</button>
+    <button class="index-btn index-btn-join" onclick="window.location.href='join.html'">加入我们</button>
+    <div class="index-decoration">
+        <p>空投已就绪 | 全员集合 | 战术竞技</p>
+    </div>
+</div>
+</div>
+<script src="js/common.js"></script>
+<script>
+initPage();
+</script>
+</body>
+</html>

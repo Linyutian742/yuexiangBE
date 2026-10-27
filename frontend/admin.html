@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>管理员后台 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.admin-tab-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2a2a3e;
+    flex-wrap: wrap;
+}
+.admin-tab {
+    padding: 10px 24px;
+    color: #64748b;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    font-size: 15px;
+    white-space: nowrap;
+}
+.admin-tab.active {
+    color: #a855f7;
+    border-bottom-color: #a855f7;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div id="admin-content">
+        <div class="admin-tab-bar">
+            <div class="admin-tab active" onclick="switchTab('products')" id="tab-products">商品管理</div>
+            <div class="admin-tab" onclick="switchTab('orders')" id="tab-orders">订单管理</div>
+            <div class="admin-tab" onclick="switchTab('reports')" id="tab-reports">举报管理</div>
+            <div class="admin-tab" onclick="switchTab('users')" id="tab-users">用户管理</div>
+            <div class="admin-tab" onclick="switchTab('boosters')" id="tab-boosters">打手信息</div>
+            <div class="admin-tab" onclick="switchTab('reviews')" id="tab-reviews">评价管理</div>
+        </div>
+
+        <!-- Products Tab -->
+        <div id="section-products">
+            <div class="admin-section">
+                <div class="admin-section-title">添加商品</div>
+                <div class="admin-inline-form">
+                    <div class="form-group">
+                        <label>标题</label>
+                        <input type="text" class="form-input" id="prod-title" placeholder="商品标题">
+                    </div>
+                    <div class="form-group">
+                        <label>价格</label>
+                        <input type="text" class="form-input" id="prod-price" placeholder="价格" style="width:100px;">
+                    </div>
+                    <div class="form-group">
+                        <label>描述</label>
+                        <input type="text" class="form-input" id="prod-desc" placeholder="描述">
+                    </div>
+                    <button class="btn btn-primary btn-small" onclick="addProduct()">添加</button>
+                </div>
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">商品列表 <button class="btn btn-secondary btn-small" onclick="loadProducts()" style="float:right;">刷新</button></div>
+                <table class="admin-table">
+                    <thead><tr><th>ID</th><th>标题</th><th>价格</th><th>描述</th><th>操作</th></tr></thead>
+                    <tbody id="product-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Orders Tab -->
+        <div id="section-orders" class="hidden">
+            <div class="admin-section">
+                <div class="admin-section-title">订单列表 <button class="btn btn-secondary btn-small" onclick="loadOrders()" style="float:right;">刷新</button></div>
+                <table class="admin-table">
+                    <thead><tr><th>ID</th><th>用户</th><th>商品</th><th>订单号</th><th>游戏ID</th><th>区服</th><th>指定打手</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+                    <tbody id="order-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div id="section-reports" class="hidden">
+            <div class="admin-section">
+                <div class="admin-section-title">举报列表 <button class="btn btn-secondary btn-small" onclick="loadReports()" style="float:right;">刷新</button></div>
+                <table class="admin-table">
+                    <thead><tr><th>ID</th><th>举报人</th><th>被举报人</th><th>原因</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="report-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="section-users" class="hidden">
+            <div class="admin-section">
+                <div class="admin-section-title">用户列表 <button class="btn btn-secondary btn-small" onclick="loadUsers()" style="float:right;">刷新</button></div>
+                <table class="admin-table">
+                    <thead><tr><th>UID</th><th>用户名</th><th>等级</th><th>状态</th><th>注册时间</th><th>操作</th></tr></thead>
+                    <tbody id="user-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Boosters Info Tab -->
+        <div id="section-boosters" class="hidden">
+            <div class="admin-section">
+                <div class="admin-section-title">添加打手信息</div>
+                <div class="admin-inline-form">
+                    <div class="form-group">
+                        <label>打手名</label>
+                        <input type="text" class="form-input" id="booster-name" placeholder="打手名">
+                    </div>
+                    <div class="form-group">
+                        <label>段位</label>
+                        <input type="text" class="form-input" id="booster-rank" placeholder="如：战神" style="width:100px;">
+                    </div>
+                    <div class="form-group">
+                        <label>擅长模式</label>
+                        <input type="text" class="form-input" id="booster-specialty" placeholder="如：单排/双排">
+                    </div>
+                    <button class="btn btn-primary btn-small" onclick="addBoosterInfo()">添加</button>
+                </div>
+                <div class="form-group" style="margin-top:12px;">
+                    <label>自我介绍</label>
+                    <textarea class="form-input" id="booster-intro" placeholder="打手自我介绍"></textarea>
+                </div>
+            </div>
+            <div class="admin-section">
+                <div class="admin-section-title">打手信息列表 <button class="btn btn-secondary btn-small" onclick="loadBoosterInfo()" style="float:right;">刷新</button></div>
+                <table class="admin-table">
+                    <thead><tr><th>ID</th><th>打手名</th><th>段位</th><th>擅长模式</th><th>自我介绍</th><th>操作</th></tr></thead>
+                    <tbody id="booster-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Reviews Tab -->
+        <div id="section-reviews" class="hidden">
+            <div class="admin-section">
+                <div class="admin-section-title">评价列表 <button class="btn btn-secondary btn-small" onclick="loadReviews()" style="float:right;">刷新</button></div>
+                <table class="admin-table">
+                    <thead><tr><th>ID</th><th>订单号</th><th>评价人</th><th>打手</th><th>评分</th><th>评价内容</th><th>时间</th></tr></thead>
+                    <tbody id="review-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+var currentTab = 'products';
+
+function getAdminToken() {
+    var user = getUser();
+    return user ? user.token : '';
+}
+
+function checkAdminAccess(callback) {
+    // 登录态不在加载期校验，也不做轮询；权限由写操作接口在服务端验一次
+    var token = getAdminToken();
+    if (!token) {
+        window.location.href = 'index.html';
+        return;
+    }
+    if (callback) callback();
+}
+
+function switchTab(tab) {
+    currentTab = tab;
+    var sections = ['products', 'orders', 'reports', 'users', 'boosters', 'reviews'];
+    for (var i = 0; i < sections.length; i++) {
+        var el = document.getElementById('section-' + sections[i]);
+        var tabEl = document.getElementById('tab-' + sections[i]);
+        if (sections[i] === tab) {
+            el.className = '';
+            tabEl.className = 'admin-tab active';
+        } else {
+            el.className = 'hidden';
+            tabEl.className = 'admin-tab';
+        }
+    }
+}
+
+// ==================== Products ====================
+function loadProducts() {
+    ajaxGet('/api/products', function (resp) {
+        var tbody = document.getElementById('product-tbody');
+        if (!resp.success) { tbody.innerHTML = ''; return; }
+        var html = '';
+        for (var i = 0; i < resp.products.length; i++) {
+            var p = resp.products[i];
+            html += '<tr><td>' + p.id + '</td><td>' + escapeHtml(p.title) + '</td><td>' + escapeHtml(p.price) + '</td><td>' + escapeHtml(p.description || '') + '</td>';
+            html += '<td><button class="btn btn-danger admin-action-btn" onclick="deleteProduct(' + p.id + ')">删除</button></td></tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+function addProduct() {
+    ajaxPost('/api/admin/product/add', {
+        token: getAdminToken(),
+        title: document.getElementById('prod-title').value,
+        price: document.getElementById('prod-price').value,
+        description: document.getElementById('prod-desc').value
+    }, function (resp) {
+        if (resp.success) {
+            showToast('添加成功', 'success');
+            document.getElementById('prod-title').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-desc').value = '';
+            loadProducts();
+        } else {
+            showToast(resp.msg || '失败', 'error');
+        }
+    });
+}
+
+function deleteProduct(id) {
+    ajaxPost('/api/admin/product/delete', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast('已删除', 'success');
+            loadProducts();
+        }
+    });
+}
+
+// ==================== Orders ====================
+function loadOrders() {
+    ajaxGet('/api/admin/orders', function (resp) {
+        var tbody = document.getElementById('order-tbody');
+        if (!resp.success) { tbody.innerHTML = ''; return; }
+        var html = '';
+        for (var i = 0; i < resp.orders.length; i++) {
+            var o = resp.orders[i];
+            var statusText, statusColor;
+            if (o.status === 'verified') {
+                statusText = '已通过';
+                statusColor = '#22c55e';
+            } else if (o.status === 'rejected') {
+                statusText = '已驳回';
+                statusColor = '#ef4444';
+            } else if (o.status === 'accepted') {
+                statusText = '进行中';
+                statusColor = '#f59e0b';
+            } else if (o.status === 'completed') {
+                statusText = '已完成';
+                statusColor = '#22c55e';
+            } else {
+                statusText = '待核对';
+                statusColor = '#f59e0b';
+            }
+            html += '<tr><td>' + o.id + '</td><td>' + escapeHtml(o.username) + '</td><td>' + escapeHtml(o.product_title || '') + '</td>';
+            html += '<td>' + escapeHtml(o.order_no || '') + '</td><td>' + escapeHtml(o.game_id || '') + '</td><td>' + escapeHtml(o.server_area || '') + '</td>';
+            html += '<td>' + escapeHtml(o.designated_booster || '-') + '</td>';
+            html += '<td style="color:' + statusColor + ';">' + statusText;
+            if (o.status === 'rejected' && o.reject_reason) {
+                html += '<br><span style="font-size:11px;color:#94a3b8;">(' + escapeHtml(o.reject_reason) + ')</span>';
+            }
+            if (o.accepted_booster) {
+                html += '<br><span style="font-size:11px;color:#a855f7;">打手:' + escapeHtml(o.accepted_booster) + '</span>';
+            }
+            html += '</td>';
+            html += '<td>' + (o.submit_time || '') + '</td>';
+            html += '<td>';
+            if (o.status === 'pending') {
+                html += '<button class="btn btn-success admin-action-btn" onclick="verifyOrder(' + o.id + ')">通过</button>';
+                html += '<button class="btn btn-danger admin-action-btn" onclick="rejectOrder(' + o.id + ')">驳回</button>';
+            }
+            html += '<button class="btn btn-danger admin-action-btn" onclick="deleteOrder(' + o.id + ')">删除</button>';
+            html += '</td>';
+            html += '</tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+function verifyOrder(id) {
+    ajaxPost('/api/admin/order/verify', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast('已通过', 'success');
+            loadOrders();
+        }
+    });
+}
+
+function rejectOrder(id) {
+    var reason = prompt('请输入驳回理由：', '支付信息不实');
+    if (reason === null) return;
+    reason = reason.trim();
+    if (!reason) reason = '支付信息不实';
+    ajaxPost('/api/admin/order/reject', { token: getAdminToken(), id: id, reason: reason }, function (resp) {
+        if (resp.success) {
+            showToast('已驳回', 'success');
+            loadOrders();
+        } else {
+            showToast(resp.msg || '操作失败', 'error');
+        }
+    });
+}
+
+function deleteOrder(id) {
+    if (!confirm('确定删除该订单？删除后不可恢复')) return;
+    ajaxPost('/api/admin/order/delete', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast('已删除', 'success');
+            loadOrders();
+        } else {
+            showToast(resp.msg || '删除失败', 'error');
+        }
+    });
+}
+
+// ==================== Reports ====================
+function loadReports() {
+    ajaxGet('/api/admin/reports', function (resp) {
+        var tbody = document.getElementById('report-tbody');
+        if (!resp.success) { tbody.innerHTML = ''; return; }
+        var html = '';
+        for (var i = 0; i < resp.reports.length; i++) {
+            var r = resp.reports[i];
+            var statusText, statusColor;
+            if (r.status === 'handled') {
+                statusText = '已处理';
+                statusColor = '#22c55e';
+            } else if (r.status === 'rejected') {
+                statusText = '不通过';
+                statusColor = '#ef4444';
+            } else {
+                statusText = '待处理';
+                statusColor = '#f59e0b';
+            }
+            html += '<tr><td>' + r.id + '</td><td>' + escapeHtml(r.reporter_name) + '</td><td>' + escapeHtml(r.target_id) + '</td>';
+            html += '<td>' + escapeHtml(r.reason) + '</td><td>' + escapeHtml(r.submit_time) + '</td><td style="color:' + statusColor + ';">' + statusText;
+            if (r.status === 'rejected' && r.reject_reason) {
+                html += '<br><span style="font-size:11px;color:#94a3b8;">(' + escapeHtml(r.reject_reason) + ')</span>';
+            }
+            html += '</td>';
+            html += '<td>';
+            if (r.status === 'pending') {
+                html += '<button class="btn btn-danger admin-action-btn" onclick="banReported(' + r.id + ',\'' + r.target_id + '\')">封禁</button>';
+                html += '<button class="btn btn-success admin-action-btn" onclick="handleReport(' + r.id + ')">通过</button>';
+                html += '<button class="btn btn-secondary admin-action-btn" onclick="rejectReport(' + r.id + ')">不通过</button>';
+            }
+            html += '<button class="btn btn-danger admin-action-btn" onclick="deleteReport(' + r.id + ')">删除</button>';
+            html += '</td>';
+            html += '</tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+function banReported(id, targetId) {
+    if (!confirm('确定封禁用户 ' + targetId + ' ?')) return;
+    ajaxPost('/api/admin/report/handle', {
+        token: getAdminToken(),
+        id: id,
+        ban: true,
+        target_id: targetId
+    }, function (resp) {
+        if (resp.success) {
+            showToast('已封禁并处理', 'success');
+            loadReports();
+        }
+    });
+}
+
+function handleReport(id) {
+    ajaxPost('/api/admin/report/handle', { token: getAdminToken(), id: id, ban: false }, function (resp) {
+        if (resp.success) {
+            showToast('已通过', 'success');
+            loadReports();
+        }
+    });
+}
+
+function rejectReport(id) {
+    var reason = prompt('请输入不通过原因：', '举报不实');
+    if (reason === null) return;
+    reason = reason.trim();
+    if (!reason) reason = '举报不实';
+    ajaxPost('/api/admin/report/reject', { token: getAdminToken(), id: id, reason: reason }, function (resp) {
+        if (resp.success) {
+            showToast('已驳回', 'success');
+            loadReports();
+        } else {
+            showToast(resp.msg || '操作失败', 'error');
+        }
+    });
+}
+
+function deleteReport(id) {
+    if (!confirm('确定删除该举报记录？删除后不可恢复')) return;
+    ajaxPost('/api/admin/report/delete', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast('已删除', 'success');
+            loadReports();
+        } else {
+            showToast(resp.msg || '删除失败', 'error');
+        }
+    });
+}
+
+// ==================== Users ====================
+function loadUsers() {
+    ajaxGet('/api/admin/users', function (resp) {
+        var tbody = document.getElementById('user-tbody');
+        if (!resp.success) { tbody.innerHTML = ''; return; }
+        var html = '';
+        for (var i = 0; i < resp.users.length; i++) {
+            var u = resp.users[i];
+            var levelText;
+            if (u.op_level === 3) {
+                levelText = '管理员(3)';
+            } else if (u.op_level === 2) {
+                levelText = '打手(2)';
+            } else {
+                levelText = '普通(1)';
+            }
+            var statusText = u.status === 'yes' ? '正常' : '封禁';
+            html += '<tr><td>' + escapeHtml(u.uid) + '</td><td>' + escapeHtml(u.user) + '</td><td>' + levelText + '</td><td>' + statusText + '</td><td>' + escapeHtml(u.reg_time) + '</td>';
+            html += '<td>';
+            if (u.status === 'yes') {
+                html += '<button class="btn btn-danger admin-action-btn" onclick="banUser(\'' + u.uid + '\')">封禁</button>';
+            } else {
+                html += '<button class="btn btn-success admin-action-btn" onclick="unbanUser(\'' + u.uid + '\')">解封</button>';
+            }
+            if (u.op_level < 2) {
+                html += '<button class="btn btn-primary admin-action-btn" onclick="setBooster(\'' + u.uid + '\')">设打手</button>';
+            } else if (u.op_level === 2) {
+                html += '<button class="btn btn-secondary admin-action-btn" onclick="revokeBooster(\'' + u.uid + '\')">撤销打手</button>';
+            }
+            html += '<button class="btn btn-secondary admin-action-btn" onclick="resetPwd(\'' + u.uid + '\')">重置密码</button>';
+            html += '<button class="btn btn-danger admin-action-btn" onclick="deleteUser(\'' + u.uid + '\')">删除</button>';
+            html += '</td></tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+function banUser(uid) {
+    ajaxPost('/api/admin/user/ban', { token: getAdminToken(), uid: uid }, function (resp) {
+        if (resp.success) { showToast('已封禁', 'success'); loadUsers(); }
+    });
+}
+function unbanUser(uid) {
+    ajaxPost('/api/admin/user/unban', { token: getAdminToken(), uid: uid }, function (resp) {
+        if (resp.success) { showToast('已解封', 'success'); loadUsers(); }
+    });
+}
+function setBooster(uid) {
+    if (!confirm('确定设为打手?')) return;
+    ajaxPost('/api/admin/user/set_admin', { token: getAdminToken(), uid: uid, op_level: 2 }, function (resp) {
+        if (resp.success) { showToast('已设为打手', 'success'); loadUsers(); }
+        else showToast(resp.msg || '失败', 'error');
+    });
+}
+function revokeBooster(uid) {
+    if (!confirm('确定撤销该打手身份(降为普通用户)?')) return;
+    ajaxPost('/api/admin/user/revoke_admin', { token: getAdminToken(), uid: uid }, function (resp) {
+        if (resp.success) { showToast('已撤销打手身份', 'success'); loadUsers(); }
+        else showToast(resp.msg || '失败', 'error');
+    });
+}
+function resetPwd(uid) {
+    if (!confirm('确定重置该用户的密码? 将生成随机临时密码。')) return;
+    ajaxPost('/api/admin/user/reset_password', { token: getAdminToken(), uid: uid }, function (resp) {
+        if (resp.success) { showToast(resp.msg || '已重置', 'success'); loadUsers(); }
+    });
+}
+function deleteUser(uid) {
+    if (!confirm('确定删除该用户?')) return;
+    ajaxPost('/api/admin/user/delete', { token: getAdminToken(), uid: uid }, function (resp) {
+        if (resp.success) { showToast('已删除', 'success'); loadUsers(); }
+        else showToast(resp.msg || '失败', 'error');
+    });
+}
+
+// ==================== Booster Info ====================
+function loadBoosterInfo() {
+    ajaxGet('/api/admin/boosters_info', function (resp) {
+        var tbody = document.getElementById('booster-tbody');
+        if (!resp.success) { tbody.innerHTML = ''; return; }
+        var html = '';
+        for (var i = 0; i < resp.boosters.length; i++) {
+            var b = resp.boosters[i];
+            html += '<tr><td>' + b.id + '</td><td>' + escapeHtml(b.name) + '</td><td>' + escapeHtml(b.rank || '') + '</td><td>' + escapeHtml(b.specialty || '') + '</td><td>' + escapeHtml(b.intro || '') + '</td>';
+            html += '<td><button class="btn btn-primary admin-action-btn" onclick="editBoosterInfo(' + b.id + ',\'' + b.name.replace(/'/g, "\\'") + '\',\'' + (b.rank || '').replace(/'/g, "\\'") + '\',\'' + (b.specialty || '').replace(/'/g, "\\'") + '\')">编辑</button>';
+            html += '<button class="btn btn-danger admin-action-btn" onclick="deleteBoosterInfo(' + b.id + ')">删除</button></td></tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+function addBoosterInfo() {
+    var name = document.getElementById('booster-name').value.trim();
+    var rank = document.getElementById('booster-rank').value.trim();
+    var specialty = document.getElementById('booster-specialty').value.trim();
+    var intro = document.getElementById('booster-intro').value.trim();
+    if (!name) {
+        showToast('打手名不能为空', 'error');
+        return;
+    }
+    ajaxPost('/api/admin/booster/add', {
+        token: getAdminToken(),
+        uid: '',
+        name: name,
+        rank: rank,
+        specialty: specialty,
+        intro: intro
+    }, function (resp) {
+        if (resp.success) {
+            showToast('添加成功', 'success');
+            document.getElementById('booster-name').value = '';
+            document.getElementById('booster-rank').value = '';
+            document.getElementById('booster-specialty').value = '';
+            document.getElementById('booster-intro').value = '';
+            loadBoosterInfo();
+        } else {
+            showToast(resp.msg || '失败', 'error');
+        }
+    });
+}
+
+function editBoosterInfo(id, name, rank, specialty) {
+    var newName = prompt('打手名：', name);
+    if (newName === null) return;
+    var newRank = prompt('段位：', rank);
+    if (newRank === null) return;
+    var newSpecialty = prompt('擅长模式：', specialty);
+    if (newSpecialty === null) return;
+    var newIntro = prompt('自我介绍：', '');
+    if (newIntro === null) return;
+    ajaxPost('/api/admin/booster/update', {
+        token: getAdminToken(),
+        id: id,
+        name: newName.trim(),
+        rank: newRank.trim(),
+        specialty: newSpecialty.trim(),
+        intro: newIntro.trim()
+    }, function (resp) {
+        if (resp.success) {
+            showToast('更新成功', 'success');
+            loadBoosterInfo();
+        } else {
+            showToast(resp.msg || '失败', 'error');
+        }
+    });
+}
+
+function deleteBoosterInfo(id) {
+    if (!confirm('确定删除此打手信息?')) return;
+    ajaxPost('/api/admin/booster/delete', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) {
+            showToast('已删除', 'success');
+            loadBoosterInfo();
+        }
+    });
+}
+
+// ==================== Reviews ====================
+function loadReviews() {
+    ajaxGet('/api/admin/reviews', function (resp) {
+        var tbody = document.getElementById('review-tbody');
+        if (!resp.success) { tbody.innerHTML = ''; return; }
+        var reviews = resp.reviews || [];
+        var html = '';
+        for (var i = 0; i < reviews.length; i++) {
+            var rv = reviews[i];
+            var starsHtml = '';
+            for (var s = 0; s < 5; s++) {
+                if (s < rv.stars) {
+                    starsHtml += '<span style="color:#fbbf24;">&#9733;</span>';
+                } else {
+                    starsHtml += '<span style="color:#2a2a3e;">&#9733;</span>';
+                }
+            }
+            html += '<tr><td>' + rv.id + '</td><td>#' + rv.order_id + '</td><td>' + escapeHtml(rv.reviewer_name) + '</td><td>' + escapeHtml(rv.booster_name) + '</td>';
+            html += '<td>' + starsHtml + ' (' + rv.stars + '星)</td>';
+            html += '<td>' + escapeHtml(rv.comment || '-') + '</td><td>' + escapeHtml(rv.review_time || '') + '</td></tr>';
+        }
+        if (reviews.length === 0) {
+            html = '<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px;">暂无评价</td></tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+// ==================== Init ====================
+initPage(function () {
+    checkAdminAccess(function () {
+        loadProducts();
+        loadOrders();
+        loadReports();
+        loadUsers();
+        loadBoosterInfo();
+        loadReviews();
+    });
+});
+</script>
+</body>
+</html>

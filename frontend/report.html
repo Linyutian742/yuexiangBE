@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>举报 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="form-card">
+        <div class="form-title">举报</div>
+        <div class="form-group">
+            <label>被举报人ID</label>
+            <input type="text" class="form-input" id="target-id" placeholder="输入被举报人ID" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label>举报原因</label>
+            <textarea class="form-input" id="reason" placeholder="输入举报原因（如开挂、骂人等）"></textarea>
+        </div>
+        <div id="captcha-container"></div>
+        <button class="btn btn-primary" style="width:100%;" onclick="submitReport()">提交举报</button>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script src="js/captcha.js"></script>
+<script>
+function submitReport() {
+    var user = getUser();
+    if (!user || !user.token) {
+        window.location.href = 'login.html';
+        return;
+    }
+    var targetId = document.getElementById('target-id').value.trim();
+    var reason = document.getElementById('reason').value.trim();
+    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container');
+    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container');
+
+    if (!targetId) {
+        showToast('请填写被举报人ID', 'error');
+        return;
+    }
+    if (!reason) {
+        showToast('请填写举报原因', 'error');
+        return;
+    }
+    if (!captchaAnswer) {
+        showToast('请完成验证', 'error');
+        return;
+    }
+
+    ajaxPost('/api/report/submit', {
+        token: user.token,
+        target_id: targetId,
+        reason: reason,
+        captcha_session: captchaSession,
+        captcha_answer: captchaAnswer
+    }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '提交成功', 'success');
+            document.getElementById('target-id').value = '';
+            document.getElementById('reason').value = '';
+            CaptchaManager.load('captcha-container');
+        } else {
+            showToast(resp.msg || '提交失败', 'error');
+            if (resp.msg === '未登录') {
+                setTimeout(function () {
+                    window.location.href = 'login.html';
+                }, 1000);
+            }
+            CaptchaManager.load('captcha-container');
+        }
+    });
+}
+
+initPage(function () {
+    if (!requireLogin()) return;
+    CaptchaManager.load('captcha-container');
+});
+</script>
+</body>
+</html>

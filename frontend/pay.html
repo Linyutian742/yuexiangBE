@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>支付 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="pay-qr-container">
+        <h2 style="color:#a855f7;margin-bottom:8px;">扫码支付</h2>
+        <p id="pay-product-info" style="color:#94a3b8;font-size:14px;margin-bottom:16px;"></p>
+        <div class="pay-qr-img">
+            <img src="qrcode.jpg" alt="收款码" style="width:220px;height:220px;display:block;margin:auto;">
+        </div>
+        <p style="color:#64748b;font-size:13px;">请扫描上方二维码完成支付<br>支付完成后点击「我已支付」</p>
+        <div class="pay-actions">
+            <button class="btn btn-secondary" onclick="window.location.href='products.html'">取消</button>
+            <button class="btn btn-primary" onclick="window.location.href='order.html'">我已支付</button>
+        </div>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script>
+initPage(function () {
+    var product = sessionStorage.getItem('yx_order_product') || localStorage.getItem('yx_order_product') || '';
+    var price = sessionStorage.getItem('yx_order_price') || localStorage.getItem('yx_order_price') || '';
+    if (product) {
+        document.getElementById('pay-product-info').textContent = product + ' - ' + price + ' 元';
+    } else {
+        document.getElementById('pay-product-info').textContent = '商品信息未加载，请返回商品页重新选择';
+    }
+});
+</script>
+</body>
+</html>

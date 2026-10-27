@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>商品 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="products-header">
+        <div class="products-brand">悦翔电竞</div>
+        <div class="products-subtitle">军火库 - 代练商品</div>
+    </div>
+    <div class="product-grid" id="product-grid">
+        <p style="color:#64748b;">加载中...</p>
+    </div>
+    <div class="report-bar">
+        <span>举报：抖音号4VlVO4</span>
+        <span>举报：抖音号3VlVO3</span>
+    </div>
+    <div style="text-align:center;margin-top:20px;">
+        <button class="btn btn-secondary" style="width:90%;max-width:360px;" onclick="showRefundTip()">未成年退款</button>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script>
+function showRefundTip() {
+    alert('请联系客服');
+}
+function loadProducts() {
+    ajaxGet('data/products.json', function (resp) {
+        var grid = document.getElementById('product-grid');
+        if (!resp.success || !resp.products || resp.products.length === 0) {
+            grid.innerHTML = '<p style="color:#64748b;">暂无商品</p>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < resp.products.length; i++) {
+            var p = resp.products[i];
+            html += '<div class="product-card">';
+            html += '<div class="product-title">' + p.title + '</div>';
+            html += '<div class="product-price">' + p.price + '<span class="product-price-unit"> 元</span></div>';
+            html += '<div class="product-desc">' + (p.description || '') + '</div>';
+            html += '<button class="btn btn-primary btn-small product-buy-btn" onclick="buyProduct(\'' + p.title + '\', \'' + p.price + '\')">购买</button>';
+            html += '</div>';
+        }
+        grid.innerHTML = html;
+    });
+}
+
+function buyProduct(title, price) {
+    if (!isLogin()) {
+        window.location.href = 'login.html';
+        return;
+    }
+    sessionStorage.setItem('yx_order_product', title);
+    sessionStorage.setItem('yx_order_price', price);
+    localStorage.setItem('yx_order_product', title);
+    localStorage.setItem('yx_order_price', price);
+    window.location.href = 'pay.html';
+}
+
+initPage(loadProducts);
+</script>
+</body>
+</html>

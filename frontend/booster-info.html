@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>打手介绍 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.booster-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.booster-card .booster-name {
+    font-size: 18px;
+    color: #a855f7;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+.booster-card .booster-info-row {
+    display: flex;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.booster-card .booster-label {
+    color: #64748b;
+    min-width: 80px;
+}
+.booster-card .booster-value {
+    color: #e2e8f0;
+    flex: 1;
+}
+.booster-card .booster-intro {
+    color: #94a3b8;
+    font-size: 13px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a2a3e;
+    line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="form-title" style="margin-bottom:20px;">打手介绍</div>
+    <div id="booster-list"></div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+function loadBoosters() {
+    ajaxGet('/api/boosters_info', function (resp) {
+        var div = document.getElementById('booster-list');
+        if (!resp.success) {
+            div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">加载失败</p>';
+            return;
+        }
+        if (resp.boosters.length === 0) {
+            div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">暂无打手信息</p>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < resp.boosters.length; i++) {
+            var b = resp.boosters[i];
+            html += '<div class="booster-card">';
+            html += '<div class="booster-name">' + b.name + '</div>';
+            if (b.rank) {
+                html += '<div class="booster-info-row"><span class="booster-label">段位</span><span class="booster-value">' + b.rank + '</span></div>';
+            }
+            if (b.specialty) {
+                html += '<div class="booster-info-row"><span class="booster-label">擅长模式</span><span class="booster-value">' + b.specialty + '</span></div>';
+            }
+            if (b.intro) {
+                html += '<div class="booster-intro">' + b.intro + '</div>';
+            }
+            html += '</div>';
+        }
+        div.innerHTML = html;
+    });
+}
+
+initPage(function () {
+    loadBoosters();
+});
+</script>
+</body>
+</html>

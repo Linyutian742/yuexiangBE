@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>提交订单 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="form-card" style="max-width:500px;">
+        <div class="form-title">提交订单</div>
+
+        <div class="form-group">
+            <label>购买商品</label>
+            <input type="text" class="form-input" id="order-product" readonly>
+        </div>
+
+        <div class="form-group">
+            <label>上传付款截图</label>
+            <div class="file-upload-area" onclick="document.getElementById('screenshot-input').click()" id="upload-area">
+                点击选择图片
+            </div>
+            <input type="file" id="screenshot-input" accept="image/*" style="display:none;" onchange="previewScreenshot(this)">
+            <img id="screenshot-preview" class="file-preview hidden" alt="预览">
+        </div>
+
+        <div class="form-group">
+            <label>订单号 <button type="button" class="btn btn-small" style="padding:2px 8px;font-size:12px;vertical-align:middle;" onclick="showOrderNoHelp()">? 如何获取</button></label>
+            <input type="text" class="form-input" id="order-no" placeholder="输入订单号" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label>游戏ID</label>
+            <input type="text" class="form-input" id="game-id" placeholder="输入游戏ID" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label>区服</label>
+            <select class="form-input" id="server-area">
+                <option value="微信区">微信区</option>
+                <option value="QQ区">QQ区</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>指定打手</label>
+            <select class="form-input" id="designated-booster">
+                <option value="">不指定（系统分配）</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>留言（可选）</label>
+            <textarea class="form-input" id="message" placeholder="输入留言（选填）"></textarea>
+        </div>
+
+        <div id="captcha-container"></div>
+
+        <button class="btn btn-primary" style="width:100%;" onclick="submitOrder()">提交订单</button>
+    </div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/captcha.js"></script>
+<script>
+var screenshotBase64 = '';
+
+function previewScreenshot(input) {
+    if (!input.files || input.files.length === 0) return;
+    var file = input.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        screenshotBase64 = e.target.result;
+        var img = document.getElementById('screenshot-preview');
+        img.src = e.target.result;
+        img.className = 'file-preview';
+        document.getElementById('upload-area').textContent = '已选择: ' + file.name;
+    };
+    reader.readAsDataURL(file);
+}
+
+function submitOrder() {
+    var user = getUser();
+    if (!user || !user.token) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    var productTitle = document.getElementById('order-product').value || sessionStorage.getItem('yx_order_product') || localStorage.getItem('yx_order_product') || '';
+    var orderNo = document.getElementById('order-no').value.trim();
+    var gameId = document.getElementById('game-id').value.trim();
+    var serverArea = document.getElementById('server-area').value;
+    var message = document.getElementById('message').value.trim();
+    var designatedBooster = document.getElementById('designated-booster').value;
+    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container');
+    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container');
+
+    if (!productTitle) {
+        showToast('请先选择商品', 'error');
+        return;
+    }
+    if (!screenshotBase64) {
+        showToast('请上传付款截图', 'error');
+        return;
+    }
+    if (!orderNo) {
+        showToast('请填写订单号', 'error');
+        return;
+    }
+    if (!gameId) {
+        showToast('请填写游戏ID', 'error');
+        return;
+    }
+    if (!captchaAnswer) {
+        showToast('请完成验证', 'error');
+        return;
+    }
+
+    ajaxPost('/api/order/submit', {
+        token: user.token,
+        product_title: productTitle,
+        screenshot: screenshotBase64,
+        order_no: orderNo,
+        game_id: gameId,
+        server_area: serverArea,
+        message: message,
+        designated_booster: designatedBooster,
+        captcha_session: captchaSession,
+        captcha_answer: captchaAnswer
+    }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '提交成功', 'success');
+            setTimeout(function () {
+                window.location.href = 'profile.html';
+            }, 1200);
+        } else {
+            showToast(resp.msg || '提交失败', 'error');
+            if (resp.msg === '未登录') {
+                setTimeout(function () {
+                    window.location.href = 'login.html';
+                }, 1000);
+            }
+            CaptchaManager.load('captcha-container');
+        }
+    });
+}
+
+function showOrderNoHelp() {
+    var msg = '=== 订单号获取方法 ===\n\n' +
+              '1. 打开微信或支付宝\n' +
+              '2. 找到刚才的支付记录\n' +
+              '3. 点击详情查看订单号\n' +
+              '4. 长按或长按复制订单号\n' +
+              '5. 回到本页面粘贴到上方输入框\n\n' +
+              '注意：订单号通常是20位左右的数字\n' +
+              '如：20250820123456789012';
+    alert(msg);
+}
+
+initPage(function () {
+    if (!requireLogin()) return;
+    var product = sessionStorage.getItem('yx_order_product') || localStorage.getItem('yx_order_product') || '';
+    document.getElementById('order-product').value = product;
+    // Load booster list for selection
+    ajaxGet('/api/boosters', function (resp) {
+        if (resp.success && resp.boosters.length > 0) {
+            var sel = document.getElementById('designated-booster');
+            for (var i = 0; i < resp.boosters.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = resp.boosters[i].name;
+                opt.textContent = resp.boosters[i].name;
+                sel.appendChild(opt);
+            }
+        }
+    });
+    CaptchaManager.load('captcha-container');
+});
+</script>
+</body>
+</html>

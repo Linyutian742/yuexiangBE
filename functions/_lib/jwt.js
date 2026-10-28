@@ -19,14 +19,18 @@ function fromB64url(str) {
   return bytes;
 }
 
+// 同一 isolate 内密钥不会变，导入结果缓存复用，省掉每次验签/签发的 importKey 开销。
+let keyCache = { secret: null, key: null };
+
 async function hmacKey(secret) {
-  return crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret || ''),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign', 'verify']
-  );
+  const s = secret || '';
+  if (keyCache.key && keyCache.secret === s) return keyCache.key;
+  const key = await crypto.subtle.importKey('raw', enc.encode(s), { name: 'HMAC', hash: 'SHA-256' }, false, [
+    'sign',
+    'verify',
+  ]);
+  keyCache = { secret: s, key: key };
+  return key;
 }
 
 // 默认有效期与服务端原 TOKEN_EXPIRE_HOURS=240 对齐（10 天）

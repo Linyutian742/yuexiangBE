@@ -1,10 +1,10 @@
 // 极小工具层：统一 JSON 响应、请求体解析、token 提取。
 // 前后端同域名，无需 CORS 头与预检处理。
 
-export function json(data, status = 200) {
+export function json(data, status = 200, extra = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
+    headers: Object.assign({ 'content-type': 'application/json; charset=utf-8' }, extra),
   });
 }
 
@@ -33,4 +33,9 @@ export function bearer(request, body) {
 export function nowText() {
   const d = new Date(Date.now() + 8 * 3600 * 1000);
   return d.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// 文件夹名用的时间戳（对应原后端的 '%Y-%m-%d_%H-%M-%S'）
+export function stampText() {
+  return nowText().replace(' ', '_').replace(/:/g, '-');
 }

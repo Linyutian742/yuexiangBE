@@ -53,7 +53,7 @@
 
 ## 迁移进度
 
-**旧 Python 后端的全部接口已搬到 `functions/`，前端零改动**（`frontend/` 下没有任何文件被修改）。旧的 `legacy-backend/` 只留作对照，部署时不会上传，两边互不引用。
+**旧 Python 后端的全部接口已搬到 `functions/`**（迁移本身前端零改动；后续按需求把验证码收敛到只在登录页使用，改了 `frontend/` 下 4 个页面，见下文「验证码的使用范围」）。旧的 `legacy-backend/` 只留作对照，部署时不会上传，两边互不引用。
 
 | 已迁移接口 | 说明 |
 | --- | --- |
@@ -66,13 +66,19 @@
 
 **不迁移的接口**：`/api/captcha/verify`、`/api/check_admin`、`/api/check_booster`、`/api/ping` —— 前端从未调用（`frontend/js/captcha.js` 里的 `verify()` 是死代码），留着也不会被触发。
 
+### 验证码的使用范围
+
+- **只有登录要验证码**：`POST /api/login` 必须带 `captcha_session` / `captcha_answer`，校验不过就回 `验证失败`。
+- **其余接口一律不要求**：`POST /api/register`、`/api/change_password`、`/api/order/submit`、`/api/report/submit` 都不再校验验证码。它们仍然**接受**这两个字段但直接忽略，所以老客户端带着旧字段请求不会报错。
+- 前端只有 `frontend/login.html` 加载 `frontend/js/captcha.js`；`order.html`、`report.html`、`profile.html` 的验证码区块、采集与提交逻辑均已删除，登录页的注册表单也不再显示验证码。
+
 ### 首次部署要做的三件事
 
 1. **执行 `db/schema.sql`**（共 7 张表：`users`、`reports`、`orders`、`products`、`booster_info`、`reviews`、`admin_log`）——D1 控制台 → Console 里粘贴执行一次。
 2. **种一个管理员**：D1 里默认没有任何管理员账号（旧账号只存在于 `legacy-backend/accounts.json`，且都是 bcrypt 哈希）。在本机跑
    `JWT_SECRET=你的密钥 node db/seed-admin.mjs <用户名> <密码>`，把打印出的那句 SQL 粘到 D1 Console 执行即可（该脚本本地生成 PBKDF2 哈希，不连数据库）。首个管理员是 `op_level=3`。
    可选取第三个参数指定迭代数（`node db/seed-admin.mjs admin 密码 2000`），加 `--no-pepper` 则生成不含 pepper 的哈希（仅本地临时用）。
-3. **配置环境变量**：`JWT_SECRET`（必填，缺失时验证码接口返回 500）、`DB`、`BUCKET`、`MAINTENANCE`；建议再加 `PWD_PEPPER`。
+3. **配置环境变量**：`JWT_SECRET`（必填，缺失时验证码、登录等接口返回 500 `服务未配置`）、`DB`、`BUCKET`、`MAINTENANCE`；建议再加 `PWD_PEPPER`。
 
 > **`PWD_PEPPER` 必须与生成种子哈希时用的一致且保持稳定**。它没配时回落 `JWT_SECRET` —— 所以**轮换 `JWT_SECRET` 会让所有密码失效**（用户只能靠管理员重置密码）。想以后能安全换 JWT 密钥，就现在单独设一个 `PWD_PEPPER`。
 
@@ -113,7 +119,7 @@ Workers **免费版单请求 CPU 上限 10ms**（付费计划 30s）。下表为
 
 无 wrangler 也能验证：测试脚本在 `.dumate/tmp/` 下，`node` 直接运行。
 
-- `.dumate/tmp/e2e-sqlite.mjs` —— **端到端主链路**（`node --experimental-sqlite`）：用真实 SQLite 执行 `db/schema.sql`，再直调全部 handler，跑通注册→登录→下单→核单→接单→完成→评价→改密→封禁，56 项断言。
-- 单接口：`test-bcrypt.mjs`（6）、`test-password.mjs`（37）、`test-auth-cache.mjs`（31）、`test-readonly.mjs`（19）、`test-auth-api.mjs`（49）、`test-write-api.mjs`（32）、`test-booster-api.mjs`（35）、`test-admin-api.mjs`（157）。
+- `.dumate/tmp/e2e-sqlite.mjs` —— **端到端主链路**（`node --experimental-sqlite`）：用真实 SQLite 执行 `db/schema.sql`，再直调全部 handler，跑通注册→登录→下单→核单→接单→完成→评价→改密→封禁，54 项断言。
+- 单接口：`test-bcrypt.mjs`（6）、`test-password.mjs`（37）、`test-auth-cache.mjs`（31）、`test-readonly.mjs`（19）、`test-auth-api.mjs`（48）、`test-write-api.mjs`（32）、`test-booster-api.mjs`（35）、`test-admin-api.mjs`（157）。
 - `.dumate/tmp/test-cpu-budget.mjs` —— **CPU 预算断言**（16 项）：关键路径逐个计时并在超预算时失败，同时断言没有任何文件静态导入 bcrypt。
-- 全部脚本当前合计 **438 项断言，0 失败**。
+- 全部脚本当前合计 **435 项断言，0 失败**。

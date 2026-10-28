@@ -41,7 +41,6 @@
                 <label>密码</label>
                 <input type="password" class="form-input" id="reg-password" placeholder="输入密码" autocomplete="off">
             </div>
-            <div id="captcha-container-reg"></div>
             <button class="btn btn-primary" style="width:100%;" onclick="doRegister()">注册</button>
             <div class="form-hint">
                 <a onclick="showLogin()">已有账户？点此登录</a>
@@ -61,7 +60,6 @@ function showLogin() {
 function showRegister() {
     document.getElementById('login-form').className = 'hidden';
     document.getElementById('register-form').className = '';
-    CaptchaManager.load('captcha-container-reg');
 }
 function showForgot() {
     showModal('提示', '<p style="color:#94a3b8;text-align:center;padding:20px 0;">请联系管理员找回密码</p>');
@@ -106,24 +104,15 @@ function doRegister() {
         showToast('用户名和密码不能为空', 'error');
         return;
     }
-    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container-reg');
-    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container-reg');
-    if (!captchaAnswer) {
-        showToast('请完成验证', 'error');
-        return;
-    }
     ajaxPost('/api/register', {
         username: username,
-        password: password,
-        captcha_session: captchaSession,
-        captcha_answer: captchaAnswer
+        password: password
     }, function (resp) {
         if (resp.success) {
             showToast('注册成功，请登录', 'success');
             showLogin();
         } else {
             showToast(resp.msg || '验证失败', 'error');
-            CaptchaManager.load('captcha-container-reg');
         }
     });
 }

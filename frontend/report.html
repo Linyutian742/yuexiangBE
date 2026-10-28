@@ -19,12 +19,10 @@
             <label>举报原因</label>
             <textarea class="form-input" id="reason" placeholder="输入举报原因（如开挂、骂人等）"></textarea>
         </div>
-        <div id="captcha-container"></div>
         <button class="btn btn-primary" style="width:100%;" onclick="submitReport()">提交举报</button>
     </div>
 </div>
 <script src="js/common.js"></script>
-<script src="js/captcha.js"></script>
 <script>
 function submitReport() {
     var user = getUser();
@@ -34,8 +32,6 @@ function submitReport() {
     }
     var targetId = document.getElementById('target-id').value.trim();
     var reason = document.getElementById('reason').value.trim();
-    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container');
-    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container');
 
     if (!targetId) {
         showToast('请填写被举报人ID', 'error');
@@ -45,23 +41,16 @@ function submitReport() {
         showToast('请填写举报原因', 'error');
         return;
     }
-    if (!captchaAnswer) {
-        showToast('请完成验证', 'error');
-        return;
-    }
 
     ajaxPost('/api/report/submit', {
         token: user.token,
         target_id: targetId,
-        reason: reason,
-        captcha_session: captchaSession,
-        captcha_answer: captchaAnswer
+        reason: reason
     }, function (resp) {
         if (resp.success) {
             showToast(resp.msg || '提交成功', 'success');
             document.getElementById('target-id').value = '';
             document.getElementById('reason').value = '';
-            CaptchaManager.load('captcha-container');
         } else {
             showToast(resp.msg || '提交失败', 'error');
             if (resp.msg === '未登录') {
@@ -69,14 +58,12 @@ function submitReport() {
                     window.location.href = 'login.html';
                 }, 1000);
             }
-            CaptchaManager.load('captcha-container');
         }
     });
 }
 
 initPage(function () {
     if (!requireLogin()) return;
-    CaptchaManager.load('captcha-container');
 });
 </script>
 </body>

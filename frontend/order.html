@@ -56,14 +56,11 @@
             <textarea class="form-input" id="message" placeholder="输入留言（选填）"></textarea>
         </div>
 
-        <div id="captcha-container"></div>
-
         <button class="btn btn-primary" style="width:100%;" onclick="submitOrder()">提交订单</button>
     </div>
 </div>
 
 <script src="js/common.js"></script>
-<script src="js/captcha.js"></script>
 <script>
 var screenshotBase64 = '';
 
@@ -94,8 +91,6 @@ function submitOrder() {
     var serverArea = document.getElementById('server-area').value;
     var message = document.getElementById('message').value.trim();
     var designatedBooster = document.getElementById('designated-booster').value;
-    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container');
-    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container');
 
     if (!productTitle) {
         showToast('请先选择商品', 'error');
@@ -113,10 +108,6 @@ function submitOrder() {
         showToast('请填写游戏ID', 'error');
         return;
     }
-    if (!captchaAnswer) {
-        showToast('请完成验证', 'error');
-        return;
-    }
 
     ajaxPost('/api/order/submit', {
         token: user.token,
@@ -126,9 +117,7 @@ function submitOrder() {
         game_id: gameId,
         server_area: serverArea,
         message: message,
-        designated_booster: designatedBooster,
-        captcha_session: captchaSession,
-        captcha_answer: captchaAnswer
+        designated_booster: designatedBooster
     }, function (resp) {
         if (resp.success) {
             showToast(resp.msg || '提交成功', 'success');
@@ -142,7 +131,6 @@ function submitOrder() {
                     window.location.href = 'login.html';
                 }, 1000);
             }
-            CaptchaManager.load('captcha-container');
         }
     });
 }
@@ -175,7 +163,6 @@ initPage(function () {
             }
         }
     });
-    CaptchaManager.load('captcha-container');
 });
 </script>
 </body>

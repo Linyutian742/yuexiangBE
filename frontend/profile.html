@@ -89,7 +89,6 @@
 </div>
 
 <script src="js/common.js"></script>
-<script src="js/captcha.js"></script>
 <script>
 var profileData = null;
 
@@ -313,10 +312,8 @@ function showChangePassword() {
     html += '<div class="form-group"><label>原密码</label><input type="password" class="form-input" id="cp-old" placeholder="输入原密码"></div>';
     html += '<div class="form-group"><label>新密码</label><input type="password" class="form-input" id="cp-new" placeholder="输入新密码"></div>';
     html += '<div class="form-group"><label>确认新密码</label><input type="password" class="form-input" id="cp-confirm" placeholder="再次输入新密码"></div>';
-    html += '<div id="captcha-container-cp"></div>';
     html += '<button class="btn btn-primary" style="width:100%;" onclick="doChangePassword()">确认修改</button>';
     showModal('修改密码', html);
-    CaptchaManager.load('captcha-container-cp');
 }
 
 function doChangePassword() {
@@ -338,20 +335,12 @@ function doChangePassword() {
         showToast('两次输入的新密码不一致', 'error');
         return;
     }
-    var captchaAnswer = CaptchaManager.getAnswerFor('captcha-container-cp');
-    var captchaSession = CaptchaManager.getSessionIdFor('captcha-container-cp');
-    if (!captchaAnswer) {
-        showToast('请完成验证', 'error');
-        return;
-    }
 
     ajaxPost('/api/change_password', {
         token: user.token,
         uid: user.uid,
         old_password: oldPwd,
-        new_password: newPwd,
-        captcha_session: captchaSession,
-        captcha_answer: captchaAnswer
+        new_password: newPwd
     }, function (resp) {
         if (resp.success) {
             closeModal();
@@ -362,7 +351,6 @@ function doChangePassword() {
             }, 1500);
         } else {
             showToast(resp.msg || '操作失败', 'error');
-            CaptchaManager.load('captcha-container-cp');
         }
     });
 }

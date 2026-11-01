@@ -6,19 +6,21 @@
 | --- | --- |
 | `frontend/` | 静态站点：页面、样式、脚本、图片、静态数据。部署时的**输出目录** |
 | `functions/` | Cloudflare Pages Functions，位于仓库根，按文件路径自动生成接口路由 |
-| `db/schema.sql` | D1 建表脚本，部署前在 Cloudflare 控制台执行一次 |
+| `一键部署.bat`、`deploy/` | **一键部署脚本**（本地用，**已被 `.gitignore` 排除，不会上传**）。第 1 步生成密钥、建表 SQL、管理员 INSERT；第 2 步把改动提交并推送到 GitHub |
 | `legacy-backend/` | 旧的 Python 后端，仅供本地对照，与 `functions/` **互不引用**，**已被 `.gitignore` 排除，不会上传** |
-| `db/seed-admin.mjs` | 生成「首个管理员」的 INSERT 语句（本地跑一次，不连数据库） |
 | `付款记录/`、`举报记录/` | 本地业务记录（含用户信息与截图），**不会上传** |
 | `.dumate/` | 本地工作区临时目录，**不会上传** |
 
-## 上传到 GitHub
+## 一键部署（推荐）
 
-1. 「一键上传Github.bat」已放在本文件所在的目录（仓库根目录）。
-2. 双击运行，按提示完成两次确认。
+仓库根目录的 **「一键部署.bat」** 是给不熟悉命令行的使用者准备的，双击即可：
 
-脚本会 `git add -A` 后**强制推送**，远端同名分支的旧历史会被覆盖。脚本内写死了仓库地址与分支：
-`https://github.com/Linyutian742/yuexiangBE.git` 的 `master` 分支 —— 要换仓库或分支，改脚本开头的 `REMOTE_URL`、`BRANCH` 两行即可。
+1. **第 1 步（准备）**：自动生成 `JWT_SECRET`、`PWD_PEPPER`（写在桌面 `悦翔电竞-配置信息.txt`，下次运行沿用旧值），把建表 SQL 写到桌面 `悦翔电竞-D1建表.sql` 并复制到剪贴板，问你要一个管理员用户名/密码后生成管理员 `INSERT` 并复制到剪贴板；同时自动打开 Cloudflare 的对应页面。你只要照着窗口里的提示往网页里粘。
+2. **第 2 步（上传）**：列出这次所有改动（新增/修改/删除各多少个），回车确认后 `git add -A` → `commit` → `push origin master`。删除的文件会黄字提示；推送失败时给出常见原因，并且只有你输入 `1`、再输入大写 `YES` 才会强制覆盖。
+
+脚本不依赖 Node.js：密钥与密码哈希用 Windows 自带的 PowerShell 生成（PBKDF2-SHA256，格式与 `functions/_lib/password.js` 完全一致，已交叉验证）。仓库地址与分支写死在 `deploy/upload.ps1`（`https://github.com/Linyutian742/yuexiangBE.git` 的 `master`）。
+
+> 旧的「一键上传Github.bat」（一步强制推送）仍保留，但推荐改用「一键部署.bat」。
 
 ## Cloudflare Pages 部署设置
 
@@ -42,10 +44,22 @@
 | `DB` | D1 数据库 | 用户、订单、举报数据 |
 | `JWT_SECRET` | 密钥（加密保存） | 登录态 JWT 的签名与校验 |
 | `MAINTENANCE` | 文本变量 | 填 `1` 表示维护中，下单接口会拒绝 |
-| `BUCKET` | R2 存储桶 | 付款截图等图片（图片上传功能接入后再绑定） |
+| `SHOTS` | KV 命名空间 | 付款截图等图片（**首选**：创建 KV 命名空间不需要绑卡） |
+| `BUCKET` | R2 存储桶（可选） | 付款截图等图片；与 `SHOTS` 同时绑定时以 `SHOTS` 为准 |
 | `PWD_PEPPER` | 密钥（加密保存，建议单独设） | 密码哈希的 pepper（见下文）。**不设就回落用 `JWT_SECRET`** |
 | `PWD_ITERATIONS` | 文本变量（可选） | PBKDF2 迭代数，默认 `1000`；免费版建议 ≤`3000`，付费计划可调高 |
 | `PWD_ALLOW_BCRYPT` | 文本变量（可选） | 填 `1` 才允许校验历史 bcrypt 哈希（免费版不要开，见下文） |
+
+### 图片存储绑定：KV（首选）或 R2（可选）
+
+`POST /api/order/submit` 把付款截图解出原始字节写进对象存储，**按绑定到的对象自动识别**（KV 命名空间有 `getWithMetadata`、R2 桶没有），两种情况都能跑：
+
+- **KV 命名空间绑定 `SHOTS`（首选）**：控制台 →「存储和数据库 / Storage & Databases」→「KV」→ 创建命名空间；回到 Pages 项目 →「设置 → 变量和绑定」→ 添加 →「KV 命名空间」→ 变量名称填 **`SHOTS`**。**创建与绑定都不需要绑卡**；免费额度为每天 1 000 次写、10 万次读、1 GB 存储，单值上限 25 MB —— 截图（建议 ≤300 KB）远在其内。
+- **R2 存储桶绑定 `BUCKET`（可选）**：变量名称填 **`BUCKET`** 即可沿用旧配置。R2 开通需要绑卡，绑不上就不绑，不影响下单。两种同时绑定时以 `SHOTS` 为准。
+
+写入的 key 沿用旧后端的目录形态 `付款记录/<用户名>/<时间戳>/付款截图.<扩展名>`；类型信息在 KV 里放 `metadata.contentType`、在 R2 里放 `httpMetadata.contentType`。
+
+> **截图目前是只写**：`screenshot_key` 只是 D1 里的一行记录，KV 与 R2 都没有读回接口。要在管理后台直接看图，需要另外加一个读取接口。
 
 ## 请求走向
 
@@ -60,7 +74,7 @@
 | `GET /api/captcha` | 验证码出题（7 种题型，无状态：答案签名进 session_id，TTL 300 秒） |
 | `GET /api/products`、`/api/boosters`、`/api/boosters_info` | 公开只读，走 `caches.default` 边缘缓存 60 秒 |
 | `POST /api/register`、`/api/login`、`/api/change_password`、`GET /api/profile` | 登录态用无状态 HS256 JWT |
-| `POST /api/order/submit`、`GET /api/order/review` | 下单（截图转发到 R2）与评价 |
+| `POST /api/order/submit`、`GET /api/order/review` | 下单（截图转发到对象存储：KV 优先、R2 兼容）与评价 |
 | `GET /api/booster/{orders,reviews}`、`POST /api/booster/{accept,complete,cancel}` | 打手工作台，订单状态机 `pending → verified → accepted → completed` |
 | `GET /api/admin/{users,orders,reports,boosters_info,reviews}`、`POST /api/admin/user/*`（8 个）、`product/*`、`order/*`、`report/*`、`booster/*` | 管理后台全部动作，操作日志写 D1 表 `admin_log` |
 
@@ -74,11 +88,11 @@
 
 ### 首次部署要做的三件事
 
-1. **执行 `db/schema.sql`**（共 7 张表：`users`、`reports`、`orders`、`products`、`booster_info`、`reviews`、`admin_log`）——D1 控制台 → Console 里粘贴执行一次。
-2. **种一个管理员**：D1 里默认没有任何管理员账号（旧账号只存在于 `legacy-backend/accounts.json`，且都是 bcrypt 哈希）。在本机跑
-   `JWT_SECRET=你的密钥 node db/seed-admin.mjs <用户名> <密码>`，把打印出的那句 SQL 粘到 D1 Console 执行即可（该脚本本地生成 PBKDF2 哈希，不连数据库）。首个管理员是 `op_level=3`。
-   可选取第三个参数指定迭代数（`node db/seed-admin.mjs admin 密码 2000`），加 `--no-pepper` 则生成不含 pepper 的哈希（仅本地临时用）。
-3. **配置环境变量**：`JWT_SECRET`（必填，缺失时验证码、登录等接口返回 500 `服务未配置`）、`DB`、`BUCKET`、`MAINTENANCE`；建议再加 `PWD_PEPPER`。
+> 最省事的做法：双击仓库根目录的 **「一键部署.bat」**，下面这三件事它都会替你生成好，你只要把生成的内容粘进 Cloudflare 网页。
+
+1. **建表**（共 7 张表：`users`、`reports`、`orders`、`products`、`booster_info`、`reviews`、`admin_log`）——D1 控制台 → Console 里粘贴执行一次。语句由脚本生成到桌面 `悦翔电竞-D1建表.sql`（共 14 条，一行一条；如果控制台要求一次一条，就粘一行执行一次）。
+2. **种一个管理员**：D1 里默认没有任何管理员账号（旧账号只存在于 `legacy-backend/accounts.json`，且都是 bcrypt 哈希）。脚本会生成一句 `INSERT INTO users ...`（PBKDF2 哈希，`op_level=3`），在同一个 D1 Console 里执行即可。
+3. **配置环境变量**：`JWT_SECRET`（必填，缺失时验证码、登录等接口返回 500 `服务未配置`）、`DB`、`MAINTENANCE`；再绑定图片存储 `SHOTS`（KV，首选）或 `BUCKET`（R2，可选）；建议再加 `PWD_PEPPER`。
 
 > **`PWD_PEPPER` 必须与生成种子哈希时用的一致且保持稳定**。它没配时回落 `JWT_SECRET` —— 所以**轮换 `JWT_SECRET` 会让所有密码失效**（用户只能靠管理员重置密码）。想以后能安全换 JWT 密钥，就现在单独设一个 `PWD_PEPPER`。
 
@@ -88,7 +102,7 @@
 - **CPU 开销已按免费版 10ms 上限压过一轮**：关键路径实测表、以及为了压进这条线做的取舍（低迭代 PBKDF2 + pepper、bcrypt 默认关闭、原生 base64 解码），见下文「免费版 CPU 预算与取舍」一节。
 - **封禁语义**：旧后端封禁时会清空 token 使登录态立即失效；新实现是「token 仍可验签，各接口读到 `status='no'` 后拒绝」。目前查了 `status` 的是 `order/submit`、`profile`（都返回 403 `账号已封禁`，`profile.html` 依赖这个文案）与打手/管理员接口（返回 403 `无权限`）；**`order/review`、`change_password`、`report/submit` 只验签名不查封禁状态**，被封禁用户仍可评价/改密/举报（`report/submit` 为了保持「零 D1 读」的设计有意为之）。
 - **边缘缓存只对匿名访客生效**：`frontend/js/common.js` 会给出 `/api/` 开头的请求自动带 `Authorization` 头，带 token 的请求一律绕过缓存直读 D1，这是设计如此（避免管理员看到脏数据）。
-- **截图仍是 base64 而不是 WebP 表单**：前端 `order.html` 当前就发 base64 data URL，本次迁移不动前端，后端只做「解出字节 → 丢进 R2」，不二次压缩、不改格式；未绑定 R2 时订单照常提交，只是 `screenshot_key` 为空。
+- **截图仍是 base64 而不是 WebP 表单**：前端 `order.html` 当前就发 base64 data URL，本次迁移不动前端，后端只做「解出字节 → 丢进对象存储」（KV 优先、R2 兼容），不二次压缩、不改格式；一个都没绑时订单照常提交，只是 `screenshot_key` 为空。
   - **请求体越大 CPU 越贵**（JSON 解析 + base64 解码都是按体积走的），所以建议前端压缩后的截屏控制在 **≤300KB**：这个体积下下单接口整条链路约 4~5ms，1MB 会逼近 10ms 上限。
 - **`admin_log` 替代了 `admin_log.txt`**：边缘环境没有本地文件系统，管理员操作日志改写入 D1。
 
@@ -119,7 +133,7 @@ Workers **免费版单请求 CPU 上限 10ms**（付费计划 30s）。下表为
 
 无 wrangler 也能验证：测试脚本在 `.dumate/tmp/` 下，`node` 直接运行。
 
-- `.dumate/tmp/e2e-sqlite.mjs` —— **端到端主链路**（`node --experimental-sqlite`）：用真实 SQLite 执行 `db/schema.sql`，再直调全部 handler，跑通注册→登录→下单→核单→接单→完成→评价→改密→封禁，54 项断言。
-- 单接口：`test-bcrypt.mjs`（6）、`test-password.mjs`（37）、`test-auth-cache.mjs`（31）、`test-readonly.mjs`（19）、`test-auth-api.mjs`（48）、`test-write-api.mjs`（32）、`test-booster-api.mjs`（35）、`test-admin-api.mjs`（157）。
+- `.dumate/tmp/e2e-sqlite.mjs` —— **端到端主链路**（`node --experimental-sqlite`）：用真实 SQLite 执行建表 SQL（与 `deploy/prep.ps1` 内嵌的一致，7 表 + 7 索引），再直调全部 handler，跑通注册→登录→下单→核单→接单→完成→评价→改密→封禁，54 项断言。
+- 单接口：`test-bcrypt.mjs`（6）、`test-password.mjs`（37）、`test-auth-cache.mjs`（31）、`test-readonly.mjs`（19）、`test-auth-api.mjs`（48）、`test-write-api.mjs`（38）、`test-booster-api.mjs`（35）、`test-admin-api.mjs`（157）。
 - `.dumate/tmp/test-cpu-budget.mjs` —— **CPU 预算断言**（16 项）：关键路径逐个计时并在超预算时失败，同时断言没有任何文件静态导入 bcrypt。
-- 全部脚本当前合计 **435 项断言，0 失败**。
+- 全部脚本当前合计 **441 项断言，0 失败**。

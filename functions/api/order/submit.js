@@ -1,8 +1,11 @@
 // POST /api/order/submit
 // 顺序：维护开关 → 验一次登录态（顺带拿封禁状态）→ 存截图 → 写 D1。
 // 验证码只在登录接口要求，本接口不校验（前端下单页也不再加载验证码）。
-// 图片只做转发：前端仍是 base64 data URL，后端直接解出字节丢进 R2，不二次压缩、不改格式、不写进 D1。
-// 未绑定 R2 时截图不落库（宁可少存图，也不把大体积 base64 塞进数据库）。
+// 图片只做转发：前端仍是 base64 data URL，后端直接解出字节丢进对象存储，不二次压缩、不改格式、不写进 D1。
+// 对象存储支持两种绑定，按能力自动识别：
+//   · KV 命名空间绑定 SHOTS（免费额度内无需绑卡，单值上限 25MB）—— 首选；
+//   · R2 存储桶绑定 BUCKET —— 兼容保留，两者同时存在时用 SHOTS。
+// 一个都没绑时截图不落库（宁可少存图，也不把大体积 base64 塞进数据库），订单照常提交。
 import { json, readJson, nowText, stampText } from '../../_lib/http.js';
 import { currentUser } from '../../_lib/auth.js';
 import { fromBase64 } from '../../_lib/base64.js';
@@ -31,13 +34,23 @@ function decodeImage(dataUrl) {
   return { bytes: fromBase64(s.slice(i + 1)), mime: m[1].toLowerCase() };
 }
 
-// 一次 R2 写；key 沿用旧后端的目录形态：付款记录/<用户名>/<时间戳>/付款截图.<ext>
+// KV 命名空间有 getWithMetadata，R2 桶没有——用它区分该用哪种元数据字段。
+function isKvNamespace(store) {
+  return typeof store.getWithMetadata === 'function';
+}
+
+// 一次对象存储写；key 沿用旧后端的目录形态：付款记录/<用户名>/<时间戳>/付款截图.<ext>
+// 值直接存原始字节（KV 与 R2 都支持 ArrayBuffer），类型信息分别放 metadata / httpMetadata。
 async function storeShot(env, username, dataUrl) {
   const img = decodeImage(dataUrl);
-  if (!img || !env.BUCKET) return '';
+  const store = env.SHOTS || env.BUCKET;
+  if (!img || !store) return '';
   const ext = EXT[img.mime] || 'png';
   const key = '付款记录/' + safeName(username) + '/' + stampText() + '/付款截图.' + ext;
-  await env.BUCKET.put(key, img.bytes, { httpMetadata: { contentType: img.mime } });
+  const opts = isKvNamespace(store)
+    ? { metadata: { contentType: img.mime } }
+    : { httpMetadata: { contentType: img.mime } };
+  await store.put(key, img.bytes, opts);
   return key;
 }
 
@@ -54,7 +67,7 @@ export async function onRequestPost({ request, env }) {
   if (!user) return json({ success: false, msg: '未登录' }, 401);
   if (user.status !== 'yes') return json({ success: false, msg: '账号已封禁' }, 403);
 
-  // 3) 截图：优先用前端已直传得到的对象名，否则把 base64 原样转发到 R2
+  // 3) 截图：优先用前端已直传得到的对象名，否则把 base64 原样转发到对象存储
   let screenshot_key = String(body.screenshot_key || '');
   if (!screenshot_key && body.screenshot) {
     try {

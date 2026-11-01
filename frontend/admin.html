@@ -94,7 +94,7 @@
             <div class="admin-section">
                 <div class="admin-section-title">订单列表 <button class="btn btn-secondary btn-small" onclick="loadOrders()" style="float:right;">刷新</button></div>
                 <table class="admin-table">
-                    <thead><tr><th>ID</th><th>用户</th><th>商品</th><th>订单号</th><th>游戏ID</th><th>区服</th><th>指定打手</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+                    <thead><tr><th>ID</th><th>用户</th><th>联系方式</th><th>商品</th><th>订单号</th><th>游戏ID</th><th>区服</th><th>指定打手</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
                     <tbody id="order-tbody"></tbody>
                 </table>
             </div>
@@ -256,11 +256,12 @@ function deleteProduct(id) {
 function loadOrders() {
     ajaxGet('/api/admin/orders', function (resp) {
         var tbody = document.getElementById('order-tbody');
-        if (!resp.success) { setTableState(tbody, 10, resp.msg || '订单加载失败', true); showToast(resp.msg || '订单加载失败', 'error'); return; }
-        if (!resp.orders.length) { setTableState(tbody, 10, '暂无订单', false); return; }
+        if (!resp.success) { setTableState(tbody, 11, resp.msg || '订单加载失败', true); showToast(resp.msg || '订单加载失败', 'error'); return; }
+        if (!resp.orders.length) { setTableState(tbody, 11, '暂无订单', false); return; }
         var html = '';
         for (var i = 0; i < resp.orders.length; i++) {
             var o = resp.orders[i];
+            var cm = splitOrderMessage(o.message);
             var statusText, statusColor;
             if (o.status === 'verified') {
                 statusText = '已通过';
@@ -278,7 +279,7 @@ function loadOrders() {
                 statusText = '待核对';
                 statusColor = '#f59e0b';
             }
-            html += '<tr><td>' + o.id + '</td><td>' + escapeHtml(o.username) + '</td><td>' + escapeHtml(o.product_title || '') + '</td>';
+            html += '<tr><td>' + o.id + '</td><td>' + escapeHtml(o.username) + '</td><td>' + escapeHtml(cm.contact || '-') + '</td><td>' + escapeHtml(o.product_title || '') + '</td>';
             html += '<td>' + escapeHtml(o.order_no || '') + '</td><td>' + escapeHtml(o.game_id || '') + '</td><td>' + escapeHtml(o.server_area || '') + '</td>';
             html += '<td>' + escapeHtml(o.designated_booster || '-') + '</td>';
             html += '<td style="color:' + statusColor + ';">' + statusText;

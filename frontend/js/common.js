@@ -240,3 +240,25 @@ function formatDate(s) {
     if (!s) return '';
     return s.replace('T', ' ').replace('Z', '');
 }
+
+// ==================== Contact / message split ====================
+// 订单留言约定（下单页生成）：【联系方式】<类型> <号码> 【留言】<原留言>
+// 旧订单没有这个标记，原样当作留言显示，联系方式为空。
+var CONTACT_MARK = '【联系方式】';
+var MESSAGE_MARK = '【留言】';
+
+function splitOrderMessage(msg) {
+    var text = (msg === undefined || msg === null) ? '' : String(msg);
+    var result = { contact: '', message: text };
+    if (text.indexOf(CONTACT_MARK) !== 0) return result;
+    var rest = text.slice(CONTACT_MARK.length);
+    var pos = rest.indexOf(MESSAGE_MARK);
+    if (pos === -1) {
+        result.contact = rest.trim();
+        result.message = '';
+        return result;
+    }
+    result.contact = rest.slice(0, pos).trim();
+    result.message = rest.slice(pos + MESSAGE_MARK.length).trim();
+    return result;
+}

@@ -45,6 +45,20 @@
         </div>
 
         <div class="form-group">
+            <label>联系方式</label>
+            <div class="contact-row" id="contact-row">
+                <select class="form-input contact-type" id="contact-type" onchange="onContactTypeChange()">
+                    <option value="">请选择</option>
+                    <option value="wechat">微信</option>
+                    <option value="qq">QQ</option>
+                    <option value="phone">手机号</option>
+                </select>
+                <input type="text" class="form-input contact-value" id="contact-value" placeholder="请先选择左侧类型" disabled autocomplete="off">
+            </div>
+            <div class="contact-hint" id="contact-hint">先选择联系方式类型，右侧输入框才能填写</div>
+        </div>
+
+        <div class="form-group">
             <label>指定打手</label>
             <select class="form-input" id="designated-booster">
                 <option value="">不指定（系统分配）</option>
@@ -63,6 +77,29 @@
 <script src="js/common.js"></script>
 <script>
 var screenshotBase64 = '';
+
+// 联系方式：先选类型再填号码。类型为空时输入框禁用，选中后解锁并换占位文案。
+var CONTACT_LABELS = { wechat: '微信', qq: 'QQ', phone: '手机号' };
+var CONTACT_PLACEHOLDER = { wechat: '请输入微信号', qq: '请输入QQ号', phone: '请输入手机号' };
+
+function onContactTypeChange() {
+    var type = document.getElementById('contact-type').value;
+    var valueInput = document.getElementById('contact-value');
+    var hint = document.getElementById('contact-hint');
+    var row = document.getElementById('contact-row');
+    if (!type) {
+        valueInput.value = '';
+        valueInput.disabled = true;
+        valueInput.placeholder = '请先选择左侧类型';
+        hint.textContent = '先选择联系方式类型，右侧输入框才能填写';
+        row.className = 'contact-row';
+        return;
+    }
+    valueInput.disabled = false;
+    valueInput.placeholder = CONTACT_PLACEHOLDER[type] || '请输入联系方式';
+    hint.textContent = '打手会通过该' + CONTACT_LABELS[type] + '联系你，请确认填写正确';
+    row.className = 'contact-row filled';
+}
 
 function previewScreenshot(input) {
     if (!input.files || input.files.length === 0) return;
@@ -89,8 +126,10 @@ function submitOrder() {
     var orderNo = document.getElementById('order-no').value.trim();
     var gameId = document.getElementById('game-id').value.trim();
     var serverArea = document.getElementById('server-area').value;
-    var message = document.getElementById('message').value.trim();
+    var rawMessage = document.getElementById('message').value.trim();
     var designatedBooster = document.getElementById('designated-booster').value;
+    var contactType = document.getElementById('contact-type').value;
+    var contactValue = document.getElementById('contact-value').value.replace(/\s/g, '');
 
     if (!productTitle) {
         showToast('请先选择商品', 'error');
@@ -108,6 +147,29 @@ function submitOrder() {
         showToast('请填写游戏ID', 'error');
         return;
     }
+    if (!contactType) {
+        showToast('请选择联系方式类型', 'error');
+        return;
+    }
+    if (!contactValue) {
+        showToast('请填写' + (CONTACT_LABELS[contactType] || '联系方式'), 'error');
+        return;
+    }
+    if (contactType === 'phone' && !/^1\d{10}$/.test(contactValue)) {
+        showToast('手机号格式不对，请填 11 位数字', 'error');
+        return;
+    }
+    if (contactType === 'qq' && !/^\d{5,12}$/.test(contactValue)) {
+        showToast('QQ号格式不对，请填 5-12 位数字', 'error');
+        return;
+    }
+
+    // 联系方式放在留言最前面，后台与打手页会把它单独拆出来展示；
+    // 原来的留言用「【留言】」标记跟在后面，旧订单没有标记也能正常显示。
+    var orderMessage = '【联系方式】' + CONTACT_LABELS[contactType] + ' ' + contactValue;
+    if (rawMessage) {
+        orderMessage += ' 【留言】' + rawMessage;
+    }
 
     ajaxPost('/api/order/submit', {
         token: user.token,
@@ -116,7 +178,7 @@ function submitOrder() {
         order_no: orderNo,
         game_id: gameId,
         server_area: serverArea,
-        message: message,
+        message: orderMessage,
         designated_booster: designatedBooster
     }, function (resp) {
         if (resp.success) {

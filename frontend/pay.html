@@ -11,26 +11,75 @@
 <div class="main-content">
     <div class="pay-qr-container">
         <h2 style="color:#a855f7;margin-bottom:8px;">扫码支付</h2>
-        <p id="pay-product-info" style="color:#94a3b8;font-size:14px;margin-bottom:16px;"></p>
-        <div class="pay-qr-img">
-            <img src="qrcode.jpg" alt="收款码" style="width:220px;height:220px;display:block;margin:auto;">
+        <p id="pay-product-info" style="color:#94a3b8;font-size:14px;margin-bottom:4px;"></p>
+
+        <div class="pay-method-label">选择支付方式</div>
+        <div class="pay-methods">
+            <div class="pay-method pay-method-wechat" id="pay-method-wechat" onclick="selectPayMethod('wechat')">
+                <span class="pay-method-check">&#10003;</span>
+            </div>
+            <div class="pay-method pay-method-alipay" id="pay-method-alipay" onclick="selectPayMethod('alipay')">
+                <span class="pay-method-check">&#10003;</span>
+            </div>
         </div>
-        <p style="color:#64748b;font-size:13px;">请扫描上方二维码完成支付<br>支付完成后点击「我已支付」</p>
+
+        <div class="pay-qr-img" id="pay-qr-box">
+            <span class="pay-qr-empty">请先选择支付方式</span>
+            <img id="pay-qr-image" alt="收款码">
+        </div>
+        <p id="pay-tip" style="color:#64748b;font-size:13px;">选择支付方式后，扫描对应收款码完成支付</p>
         <div class="pay-actions">
             <button class="btn btn-secondary" onclick="window.location.href='products.html'">取消</button>
-            <button class="btn btn-primary" onclick="window.location.href='order.html'">我已支付</button>
+            <button class="btn btn-primary" onclick="goPaid()">我已支付</button>
         </div>
     </div>
 </div>
 <script src="js/common.js"></script>
 <script>
+// 收款方式：默认不选中任何一项，点击后才展示对应收款码
+var PAY_METHODS = {
+    wechat: { name: '微信', image: 'WeChat Pay.jpg', alt: '微信 收款码' },
+    alipay: { name: '支付宝', image: 'alipay.png', alt: '支付宝收款码' }
+};
+var currentPayMethod = '';
+
+function selectPayMethod(type) {
+    var conf = PAY_METHODS[type];
+    if (!conf) return;
+    currentPayMethod = type;
+
+    var wechatBox = document.getElementById('pay-method-wechat');
+    var alipayBox = document.getElementById('pay-method-alipay');
+    if (wechatBox) wechatBox.className = 'pay-method pay-method-wechat' + (type === 'wechat' ? ' active' : '');
+    if (alipayBox) alipayBox.className = 'pay-method pay-method-alipay' + (type === 'alipay' ? ' active' : '');
+
+    var img = document.getElementById('pay-qr-image');
+    if (img) {
+        img.src = conf.image;
+        img.alt = conf.alt;
+    }
+    var box = document.getElementById('pay-qr-box');
+    if (box) box.className = 'pay-qr-img selected';
+    var tip = document.getElementById('pay-tip');
+    if (tip) tip.textContent = '请扫描上方' + conf.name + '收款码完成支付，完成后点击「我已支付」';
+}
+
+function goPaid() {
+    if (!currentPayMethod) {
+        showToast('请先选择支付方式', 'error');
+        return;
+    }
+    window.location.href = 'order.html';
+}
+
 initPage(function () {
     var product = sessionStorage.getItem('yx_order_product') || localStorage.getItem('yx_order_product') || '';
     var price = sessionStorage.getItem('yx_order_price') || localStorage.getItem('yx_order_price') || '';
+    var info = document.getElementById('pay-product-info');
     if (product) {
-        document.getElementById('pay-product-info').textContent = product + ' - ' + price + ' 元';
+        info.textContent = product + ' - ' + price + ' 元';
     } else {
-        document.getElementById('pay-product-info').textContent = '商品信息未加载，请返回商品页重新选择';
+        info.textContent = '商品信息未加载，请返回商品页重新选择';
     }
 });
 </script>

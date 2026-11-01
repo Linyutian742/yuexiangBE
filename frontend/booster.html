@@ -151,8 +151,12 @@ function loadBoosterOrders() {
                 if (o.designated_booster) {
                     html += '<div class="order-row"><span class="order-label">指定打手</span><span class="order-value" style="color:#f59e0b;">' + escapeHtml(o.designated_booster) + '</span></div>';
                 }
-                if (o.message) {
-                    html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(o.message) + '</span></div>';
+                var cm = splitOrderMessage(o.message);
+                if (cm.contact) {
+                    html += '<div class="order-row"><span class="order-label">联系方式</span><span class="order-value" style="color:#a855f7;">' + escapeHtml(cm.contact) + '</span></div>';
+                }
+                if (cm.message) {
+                    html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(cm.message) + '</span></div>';
                 }
                 html += '<div class="order-row"><span class="order-label">下单时间</span><span class="order-value">' + escapeHtml(o.submit_time || '') + '</span></div>';
                 html += '<div style="margin-top:10px;"><button class="btn btn-primary btn-small" onclick="acceptOrder(' + o.id + ')">接单</button></div>';
@@ -185,8 +189,12 @@ function loadBoosterOrders() {
                 html += '<div class="order-row"><span class="order-label">商品</span><span class="order-value">' + escapeHtml(o.product_title || '') + '</span></div>';
                 html += '<div class="order-row"><span class="order-label">游戏ID</span><span class="order-value">' + escapeHtml(o.game_id || '') + '</span></div>';
                 html += '<div class="order-row"><span class="order-label">区服</span><span class="order-value">' + escapeHtml(o.server_area || '') + '</span></div>';
-                if (o.message) {
-                    html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(o.message) + '</span></div>';
+                var cm = splitOrderMessage(o.message);
+                if (cm.contact) {
+                    html += '<div class="order-row"><span class="order-label">联系方式</span><span class="order-value" style="color:#a855f7;">' + escapeHtml(cm.contact) + '</span></div>';
+                }
+                if (cm.message) {
+                    html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(cm.message) + '</span></div>';
                 }
                 html += '<div class="order-row"><span class="order-label">下单时间</span><span class="order-value">' + escapeHtml(o.submit_time || '') + '</span></div>';
                 html += '<div class="order-row"><span class="order-label">状态</span><span class="order-value" style="color:' + statusColor + ';">' + statusText + '</span></div>';

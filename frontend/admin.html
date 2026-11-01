@@ -26,12 +26,31 @@
     color: #a855f7;
     border-bottom-color: #a855f7;
 }
+.admin-empty {
+    text-align: center;
+    color: #64748b;
+    padding: 20px;
+}
+.admin-empty-error {
+    color: #ef4444;
+}
+.admin-notice {
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #3a2a12;
+    border: 1px solid #a16207;
+    color: #fde68a;
+    font-size: 13px;
+    line-height: 1.6;
+}
 </style>
 </head>
 <body>
 <div id="nav-container"></div>
 <div class="main-content">
     <div id="admin-content">
+        <div id="admin-notice" class="hidden"></div>
         <div class="admin-tab-bar">
             <div class="admin-tab active" onclick="switchTab('products')" id="tab-products">商品管理</div>
             <div class="admin-tab" onclick="switchTab('orders')" id="tab-orders">订单管理</div>
@@ -153,6 +172,11 @@
 <script>
 var currentTab = 'products';
 
+// 表格空态/错误态：以前失败时直接清空 tbody，管理员看到一片空白，分不清「没数据」还是「坏了」。
+function setTableState(tbody, cols, msg, isError) {
+    tbody.innerHTML = '<tr><td colspan="' + cols + '" class="admin-empty' + (isError ? ' admin-empty-error' : '') + '">' + escapeHtml(msg) + '</td></tr>';
+}
+
 function getAdminToken() {
     var user = getUser();
     return user ? user.token : '';
@@ -188,7 +212,8 @@ function switchTab(tab) {
 function loadProducts() {
     ajaxGet('/api/products', function (resp) {
         var tbody = document.getElementById('product-tbody');
-        if (!resp.success) { tbody.innerHTML = ''; return; }
+        if (!resp.success) { setTableState(tbody, 5, resp.msg || '商品加载失败', true); showToast(resp.msg || '商品加载失败', 'error'); return; }
+        if (!resp.products.length) { setTableState(tbody, 5, '暂无商品（可在上方「添加商品」新增）', false); return; }
         var html = '';
         for (var i = 0; i < resp.products.length; i++) {
             var p = resp.products[i];
@@ -231,7 +256,8 @@ function deleteProduct(id) {
 function loadOrders() {
     ajaxGet('/api/admin/orders', function (resp) {
         var tbody = document.getElementById('order-tbody');
-        if (!resp.success) { tbody.innerHTML = ''; return; }
+        if (!resp.success) { setTableState(tbody, 10, resp.msg || '订单加载失败', true); showToast(resp.msg || '订单加载失败', 'error'); return; }
+        if (!resp.orders.length) { setTableState(tbody, 10, '暂无订单', false); return; }
         var html = '';
         for (var i = 0; i < resp.orders.length; i++) {
             var o = resp.orders[i];
@@ -317,7 +343,8 @@ function deleteOrder(id) {
 function loadReports() {
     ajaxGet('/api/admin/reports', function (resp) {
         var tbody = document.getElementById('report-tbody');
-        if (!resp.success) { tbody.innerHTML = ''; return; }
+        if (!resp.success) { setTableState(tbody, 7, resp.msg || '举报加载失败', true); showToast(resp.msg || '举报加载失败', 'error'); return; }
+        if (!resp.reports.length) { setTableState(tbody, 7, '暂无举报', false); return; }
         var html = '';
         for (var i = 0; i < resp.reports.length; i++) {
             var r = resp.reports[i];
@@ -407,7 +434,8 @@ function deleteReport(id) {
 function loadUsers() {
     ajaxGet('/api/admin/users', function (resp) {
         var tbody = document.getElementById('user-tbody');
-        if (!resp.success) { tbody.innerHTML = ''; return; }
+        if (!resp.success) { setTableState(tbody, 6, resp.msg || '用户加载失败', true); showToast(resp.msg || '用户加载失败', 'error'); return; }
+        if (!resp.users.length) { setTableState(tbody, 6, '暂无用户', false); return; }
         var html = '';
         for (var i = 0; i < resp.users.length; i++) {
             var u = resp.users[i];
@@ -482,7 +510,8 @@ function deleteUser(uid) {
 function loadBoosterInfo() {
     ajaxGet('/api/admin/boosters_info', function (resp) {
         var tbody = document.getElementById('booster-tbody');
-        if (!resp.success) { tbody.innerHTML = ''; return; }
+        if (!resp.success) { setTableState(tbody, 6, resp.msg || '打手信息加载失败', true); showToast(resp.msg || '打手信息加载失败', 'error'); return; }
+        if (!resp.boosters.length) { setTableState(tbody, 6, '暂无打手信息（可在上方添加）', false); return; }
         var html = '';
         for (var i = 0; i < resp.boosters.length; i++) {
             var b = resp.boosters[i];
@@ -564,8 +593,9 @@ function deleteBoosterInfo(id) {
 function loadReviews() {
     ajaxGet('/api/admin/reviews', function (resp) {
         var tbody = document.getElementById('review-tbody');
-        if (!resp.success) { tbody.innerHTML = ''; return; }
+        if (!resp.success) { setTableState(tbody, 7, resp.msg || '评价加载失败', true); showToast(resp.msg || '评价加载失败', 'error'); return; }
         var reviews = resp.reviews || [];
+        if (!reviews.length) { setTableState(tbody, 7, '暂无评价', false); return; }
         var html = '';
         for (var i = 0; i < reviews.length; i++) {
             var rv = reviews[i];
@@ -591,6 +621,18 @@ function loadReviews() {
 // ==================== Init ====================
 initPage(function () {
     checkAdminAccess(function () {
+        // 权限提示：非管理员账号进后台时，服务端对各列表都判 403，看起来像「页面坏了」。
+        var me = getUser();
+        var lvl = me && me.op_level ? Number(me.op_level) : 0;
+        if (lvl < 3) {
+            var notice = document.getElementById('admin-notice');
+            if (notice) {
+                notice.className = 'admin-notice';
+                notice.innerHTML = '当前账号「' + escapeHtml(me && me.username ? me.username : '未登录') + '」不是管理员，'
+                    + '下面的订单/用户等列表都会显示「无权限」。请改用管理员账号登录；'
+                    + '若还没有管理员账号，运行项目里的「生成管理员账户.bat」生成一个。';
+            }
+        }
         loadProducts();
         loadOrders();
         loadReports();

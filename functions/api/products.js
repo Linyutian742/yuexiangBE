@@ -8,10 +8,15 @@ const TTL = 60;
 
 async function list(env) {
   if (!env.DB) return { success: true, products: [] };
-  const { results } = await env.DB.prepare(
-    'SELECT id, title, price, description FROM products ORDER BY id DESC'
-  ).all();
-  return { success: true, products: results || [] };
+  try {
+    const { results } = await env.DB.prepare(
+      'SELECT id, title, price, description FROM products ORDER BY id DESC'
+    ).all();
+    return { success: true, products: results || [] };
+  } catch (e) {
+    // 兜住 D1 异常，返回可读 JSON（否则后台商品页会因整页 500 而空白）
+    return { success: false, msg: '商品读取失败：' + ((e && e.message) || e) };
+  }
 }
 
 export async function onRequestGet({ request, env }) {

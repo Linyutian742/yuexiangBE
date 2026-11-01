@@ -7,6 +7,7 @@
 /涓炬姤璁板綍/
 /浠樻璁板綍/
 /.dumate/
+/.tmp/
 /蹇収瀛樻斁/
 /绠＄悊鍛樼敓鎴愬櫒/
 # ============================================================
@@ -29,4 +30,6 @@ node_modules/
 Thumbs.db
 desktop.ini
 *.docx
-.DS_Store一键上传Github.bat
+.DS_Store
+涓�閿笂浼燝ithub.bat
+一键上传Github.bat

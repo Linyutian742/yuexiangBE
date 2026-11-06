@@ -103,13 +103,13 @@ function showToast(msg, type) {
 }
 
 // ==================== Modal ====================
-function showModal(title, contentHtml) {
+function showModal(title, contentHtml, extraClass) {
     closeModal();
     var overlay = document.createElement('div');
     overlay.id = 'yx-modal';
     overlay.className = 'modal-overlay show';
     var box = document.createElement('div');
-    box.className = 'modal-box';
+    box.className = extraClass ? 'modal-box ' + extraClass : 'modal-box';
     box.innerHTML = '<span class="modal-close" onclick="closeModal()">&times;</span>' +
         '<div class="modal-title">' + title + '</div>' + contentHtml;
     overlay.appendChild(box);
@@ -261,4 +261,10 @@ function splitOrderMessage(msg) {
     result.contact = rest.slice(0, pos).trim();
     result.message = rest.slice(pos + MESSAGE_MARK.length).trim();
     return result;
+}
+// ==================== Application (报名) helpers ====================
+function appStatusMeta(status) {
+    if (status === 'approved') return { text: '已通过', cls: 'app-status-approved' };
+    if (status === 'rejected') return { text: '已拒绝', cls: 'app-status-rejected' };
+    return { text: '待审核', cls: 'app-status-pending' };
 }

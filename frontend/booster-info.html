@@ -46,35 +46,52 @@
 <div id="nav-container"></div>
 <div class="main-content">
     <div class="form-title" style="margin-bottom:20px;">打手介绍</div>
-    <div id="booster-list"></div>
+    <div id="booster-list"><p style="color:#64748b;text-align:center;padding:20px;">加载中...</p></div>
 </div>
 
 <script src="js/common.js"></script>
 <script>
+// 打手数据来自本地静态文件 data/boosters.json（纯数组），不依赖任何后端接口。
+// 兼容两种写法：纯数组 [ {...} ]，或 { success: true, boosters: [ {...} ] }。
+function pickBoosterList(resp) {
+    if (!resp) return [];
+    if (Object.prototype.toString.call(resp) === '[object Array]') return resp;
+    if (resp.boosters && resp.boosters.length !== undefined) return resp.boosters;
+    return [];
+}
+
+function boosterInfoRow(label, value) {
+    if (!value) return '';
+    return '<div class="booster-info-row"><span class="booster-label">' + label +
+        '</span><span class="booster-value">' + escapeHtml(value) + '</span></div>';
+}
+
+function boosterPlaceholder(text) {
+    return '<p style="color:#64748b;text-align:center;padding:20px;">' + text + '</p>';
+}
+
 function loadBoosters() {
-    ajaxGet('/api/boosters_info', function (resp) {
+    ajaxGet('data/boosters.json', function (resp) {
         var div = document.getElementById('booster-list');
-        if (!resp.success) {
-            div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">加载失败</p>';
+        if (!resp || resp.success === false) {
+            div.innerHTML = boosterPlaceholder('打手信息加载失败');
             return;
         }
-        if (resp.boosters.length === 0) {
-            div.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">暂无打手信息</p>';
+        var list = pickBoosterList(resp);
+        if (list.length === 0) {
+            div.innerHTML = boosterPlaceholder('暂无打手信息');
             return;
         }
         var html = '';
-        for (var i = 0; i < resp.boosters.length; i++) {
-            var b = resp.boosters[i];
+        for (var i = 0; i < list.length; i++) {
+            var b = list[i];
             html += '<div class="booster-card">';
-            html += '<div class="booster-name">' + b.name + '</div>';
-            if (b.rank) {
-                html += '<div class="booster-info-row"><span class="booster-label">段位</span><span class="booster-value">' + b.rank + '</span></div>';
-            }
-            if (b.specialty) {
-                html += '<div class="booster-info-row"><span class="booster-label">擅长模式</span><span class="booster-value">' + b.specialty + '</span></div>';
-            }
-            if (b.intro) {
-                html += '<div class="booster-intro">' + b.intro + '</div>';
+            html += '<div class="booster-name">' + escapeHtml(b.nickname || b.name || '') + '</div>';
+            html += boosterInfoRow('段位', b.level || b.rank);
+            html += boosterInfoRow('擅长游戏', b.specialty);
+            var intro = b.introduction || b.intro;
+            if (intro) {
+                html += '<div class="booster-intro">' + escapeHtml(intro) + '</div>';
             }
             html += '</div>';
         }

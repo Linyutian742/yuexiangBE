@@ -10,6 +10,8 @@
 /.tmp/
 /快照存放/
 /管理员生成器/
+# 本地后端（legacy-backend 的 log_admin）写出的操作日志，不上传
+/admin_log.txt
 # ============================================================
 # 本地脚本与开发残留
 # ============================================================
@@ -32,4 +34,11 @@ desktop.ini
 *.docx
 .DS_Store
 一键上传Github.bat
+# Local data editor tool (never uploaded)
+/数据管理工具/
+# cloudflared 本地隧道相关文件（不上传）
+/cloudflared.exe
+/start-tunnel.bat
+/config.yml
+/config.yml.bak
 һ���ϴ�Github.bat

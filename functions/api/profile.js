@@ -1,5 +1,5 @@
 // GET /api/profile
-// 一次鉴权读 users 行 → 一次读订单（含评价子查询）→ 一次读举报，共 3 次 D1 读，无写。
+// 一次鉴权读 users 行 → 一次读订单（含评价子查询）→ 一次读举报 → 一次读报名，共 4 次 D1 读，无写。
 // 响应字段与旧后端逐字对齐，前端 profile.html 不改。
 import { json } from '../_lib/http.js';
 import { currentUser } from '../_lib/auth.js';
@@ -22,6 +22,37 @@ export async function onRequestGet({ request, env }) {
   )
     .bind(row.username)
     .all();
+
+  // 报名记录：表可能还没建（D1 未执行建表脚本），兜住异常避免整页 500。
+  let appRow = null;
+  let appError = '';
+  try {
+    appRow = await env.DB.prepare(
+      'SELECT id, nickname, game_id, server_area, game_rank, specialty, contact, online_time, intro, submit_time, status, reject_reason, review_time FROM applications WHERE uid = ? ORDER BY id DESC LIMIT 1'
+    )
+      .bind(row.uid)
+      .first();
+  } catch (e) {
+    appError = '报名信息读取失败：' + ((e && e.message) || e);
+  }
+
+  const application = appRow
+    ? {
+        id: appRow.id || 0,
+        nickname: appRow.nickname || '',
+        game_id: appRow.game_id || '',
+        server_area: appRow.server_area || '',
+        game_rank: appRow.game_rank || '',
+        specialty: appRow.specialty || '',
+        contact: appRow.contact || '',
+        online_time: appRow.online_time || '',
+        intro: appRow.intro || '',
+        submit_time: appRow.submit_time || '',
+        status: appRow.status || 'pending',
+        reject_reason: appRow.reject_reason || '',
+        review_time: appRow.review_time || '',
+      }
+    : null;
 
   const mappedOrders = (orders.results || []).map((o) => {
     const hasReview = o.review_id !== null && o.review_id !== undefined;
@@ -61,5 +92,7 @@ export async function onRequestGet({ request, env }) {
     },
     orders: mappedOrders,
     reports: mappedReports,
+    application: application,
+    application_error: appError,
   });
 }

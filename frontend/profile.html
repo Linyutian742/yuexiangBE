@@ -81,6 +81,9 @@
             <button class="profile-action-btn" onclick="showReportsModal()">
                 我的举报 <span class="pa-arrow">&rsaquo;</span>
             </button>
+            <button class="profile-action-btn" onclick="showApplicationModal()">
+                我的报名 <span class="pa-arrow">&rsaquo;</span>
+            </button>
         </div>
 
         <button class="btn btn-secondary" style="width:100%;margin-top:16px;" onclick="showChangePassword()">修改密码</button>
@@ -218,6 +221,58 @@ function showReportsModal() {
         }
     }
     showModal('我的举报', html);
+}
+
+// ==================== 我的报名 ====================
+function appResultRow(label, value) {
+    return '<div class="app-result-row"><span class="app-result-label">' + label + '</span>'
+        + '<span class="app-result-value">' + (value ? escapeHtml(value) : '-') + '</span></div>';
+}
+
+function goJoinPage() {
+    closeModal();
+    window.location.href = 'join.html';
+}
+
+function showApplicationModal() {
+    if (!profileData) {
+        showToast('数据加载中，请稍后', 'error');
+        return;
+    }
+    var html = '';
+    if (profileData.application_error) {
+        html += '<div class="app-reject-reason">' + escapeHtml(profileData.application_error) + '</div>';
+    }
+    var app = profileData.application;
+    if (!app) {
+        html += '<p style="color:#64748b;text-align:center;padding:16px 0;">你还没有提交报名</p>';
+        html += '<div class="app-career-note">想成为认证代练？到「加入我们」页填写报名表，通过审核后即可接单。</div>';
+        html += '<button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="goJoinPage()">去「加入我们」报名</button>';
+        showModal('我的报名', html);
+        return;
+    }
+    var m = appStatusMeta(app.status);
+    html += '<div style="text-align:center;margin-bottom:14px;"><span class="app-status ' + m.cls + '">' + m.text + '</span></div>';
+    html += appResultRow('昵称', app.nickname);
+    html += appResultRow('游戏ID', app.game_id);
+    html += appResultRow('区服', app.server_area);
+    html += appResultRow('段位', app.game_rank);
+    html += appResultRow('擅长模式', app.specialty);
+    html += appResultRow('联系方式', app.contact);
+    html += appResultRow('在线时间', app.online_time);
+    html += appResultRow('自我介绍', app.intro);
+    html += appResultRow('提交时间', app.submit_time);
+    if (app.status === 'rejected' && app.reject_reason) {
+        html += '<div class="app-reject-reason">拒绝原因：' + escapeHtml(app.reject_reason) + '</div>';
+    }
+    if (app.status === 'approved') {
+        html += '<div class="app-career-note">恭喜，你已通过审核，可到「打手接单」页面接单。</div>';
+    } else if (app.status === 'pending') {
+        html += '<div class="app-career-note">报名已提交，请等待管理员审核。</div>';
+    } else if (app.status === 'rejected') {
+        html += '<button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="goJoinPage()">重新提交报名</button>';
+    }
+    showModal('我的报名', html);
 }
 
 var reviewStars = 0;

@@ -21,10 +21,315 @@
         <p>- 灵活接单，时间自由</p>
         <p>- 高额分成，收益可观</p>
         <p>- 专属代练标识，优先接单</p>
-        <p>有意者请联系管理员申请，通过审核后即可成为认证代练。</p>
+        <p>有意者请填写下方报名表提交申请，通过审核后即可成为认证代练。</p>
+    </div>
+
+    <div class="form-card" id="apply-card" style="max-width:520px;">
+        <!-- 加载中 -->
+        <div id="apply-loading" class="app-login-hint">正在加载报名信息...</div>
+
+        <!-- 未登录 -->
+        <div id="apply-login-box" class="hidden">
+            <div class="form-title">报名</div>
+            <div class="app-login-hint" id="apply-login-hint-text">报名需要先登录账号。登录后即可填写个人信息并提交申请。</div>
+            <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="goLogin()">去登录</button>
+        </div>
+
+        <!-- 已有报名：查看状态 -->
+        <div id="apply-status-box" class="hidden">
+            <div class="form-title">我的报名</div>
+            <div id="apply-status-body"></div>
+            <button class="btn btn-primary hidden" id="apply-resubmit-btn" style="width:100%;margin-top:16px;" onclick="openApplyForm(null)">立即报名</button>
+        </div>
+
+        <!-- 报名表单 -->
+        <div id="apply-form-box" class="hidden">
+            <div class="form-title">填写报名信息</div>
+
+            <div class="form-group">
+                <label>昵称</label>
+                <input type="text" class="form-input" id="ap-nickname" placeholder="你的昵称（选填）" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>游戏ID <span style="color:#ef4444;">*</span></label>
+                <input type="text" class="form-input" id="ap-game-id" placeholder="和平精英游戏ID" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>区服 <span style="color:#ef4444;">*</span></label>
+                <select class="form-input" id="ap-server-area">
+                    <option value="">请选择区服</option>
+                    <option value="微信区">微信区</option>
+                    <option value="QQ区">QQ区</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>段位 <span style="color:#ef4444;">*</span></label>
+                <select class="form-input" id="ap-game-rank">
+                    <option value="">请选择段位</option>
+                    <option value="超级王牌">超级王牌</option>
+                    <option value="无敌战神">无敌战神</option>
+                    <option value="其他">其他（请在自我介绍里说明）</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>擅长模式</label>
+                <input type="text" class="form-input" id="ap-specialty" placeholder="如：单排 / 双排 / 四排（选填）" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>联系方式 <span style="color:#ef4444;">*</span></label>
+                <div class="contact-row" id="contact-row">
+                    <select class="form-input contact-type" id="contact-type" onchange="onContactTypeChange()">
+                        <option value="">请选择</option>
+                        <option value="wechat">微信</option>
+                        <option value="qq">QQ</option>
+                        <option value="phone">手机号</option>
+                    </select>
+                    <input type="text" class="form-input contact-value" id="contact-value" placeholder="请先选择左侧类型" disabled autocomplete="off">
+                </div>
+                <div class="contact-hint" id="contact-hint">先选择联系方式类型，右侧输入框才能填写</div>
+            </div>
+
+            <div class="form-group">
+                <label>在线时间</label>
+                <input type="text" class="form-input" id="ap-online-time" placeholder="如：每天 19:00-23:00（选填）" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label>自我介绍</label>
+                <textarea class="form-input" id="ap-intro" placeholder="介绍你的游戏水平、接单经验等（选填）"></textarea>
+            </div>
+
+            <button class="btn btn-primary" style="width:100%;" onclick="submitApplication()">提交报名</button>
+            <div class="app-career-note">提交后请等待管理员审核，结果可在「个人主页 → 我的报名」查看。</div>
+        </div>
     </div>
 </div>
+
 <script src="js/common.js"></script>
-<script>initPage();</script>
+<script>
+var CONTACT_LABELS = { wechat: '微信', qq: 'QQ', phone: '手机号' };
+var CONTACT_PLACEHOLDER = { wechat: '请输入微信号', qq: '请输入QQ号', phone: '请输入手机号' };
+
+function goLogin() {
+    window.location.href = 'login.html';
+}
+
+// 联系方式：先选类型再填号码。类型为空时输入框禁用，选中后解锁并换占位文案。
+function onContactTypeChange() {
+    var type = document.getElementById('contact-type').value;
+    var valueInput = document.getElementById('contact-value');
+    var hint = document.getElementById('contact-hint');
+    var row = document.getElementById('contact-row');
+    if (!type) {
+        valueInput.value = '';
+        valueInput.disabled = true;
+        valueInput.placeholder = '请先选择左侧类型';
+        hint.textContent = '先选择联系方式类型，右侧输入框才能填写';
+        row.className = 'contact-row';
+        return;
+    }
+    valueInput.disabled = false;
+    valueInput.placeholder = CONTACT_PLACEHOLDER[type] || '请输入联系方式';
+    hint.textContent = '管理员会通过该' + CONTACT_LABELS[type] + '联系你，请确认填写正确';
+    row.className = 'contact-row filled';
+}
+
+// 四个区块互斥显示
+function showApplyBox(id) {
+    var ids = ['apply-loading', 'apply-login-box', 'apply-status-box', 'apply-form-box'];
+    for (var i = 0; i < ids.length; i++) {
+        var el = document.getElementById(ids[i]);
+        if (!el) continue;
+        el.className = (ids[i] === id) ? '' : 'hidden';
+    }
+}
+
+function appRow(label, value) {
+    return '<div class="app-result-row"><span class="app-result-label">' + label + '</span>'
+        + '<span class="app-result-value">' + (value ? escapeHtml(value) : '-') + '</span></div>';
+}
+
+function appStatusRow(status) {
+    var m = appStatusMeta(status);
+    return '<div class="app-result-row"><span class="app-result-label">状态</span>'
+        + '<span class="app-result-value"><span class="app-status ' + m.cls + '">' + m.text + '</span></span></div>';
+}
+
+function renderApplicationStatus(app) {
+    var body = document.getElementById('apply-status-body');
+    var btn = document.getElementById('apply-resubmit-btn');
+    var html = '';
+
+    if (!app) {
+        html += '<div class="app-login-hint">你还没有提交报名。<br>点击下方按钮填写个人信息，报名成为代练。</div>';
+        body.innerHTML = html;
+        btn.className = 'btn btn-primary';
+        btn.textContent = '立即报名';
+        btn.onclick = function () { openApplyForm(null); };
+        return;
+    }
+
+    html += appStatusRow(app.status);
+    html += appRow('昵称', app.nickname);
+    html += appRow('游戏ID', app.game_id);
+    html += appRow('区服', app.server_area);
+    html += appRow('段位', app.game_rank);
+    html += appRow('擅长模式', app.specialty);
+    html += appRow('联系方式', app.contact);
+    html += appRow('在线时间', app.online_time);
+    html += appRow('自我介绍', app.intro);
+    html += appRow('提交时间', app.submit_time);
+
+    if (app.status === 'rejected' && app.reject_reason) {
+        html += '<div class="app-reject-reason">拒绝原因：' + escapeHtml(app.reject_reason) + '</div>';
+    }
+    if (app.status === 'approved') {
+        html += '<div class="app-career-note">恭喜，你已通过审核，可到「打手接单」页面接单。</div>';
+    } else if (app.status === 'pending') {
+        html += '<div class="app-career-note">报名已提交，请等待管理员审核。</div>';
+    }
+    body.innerHTML = html;
+
+    if (app.status === 'rejected') {
+        btn.className = 'btn btn-primary';
+        btn.textContent = '重新提交报名';
+        btn.onclick = function () { openApplyForm(app); };
+    } else {
+        btn.className = 'hidden';
+    }
+}
+
+// app 为 null 表示新报名；传入旧记录表示被拒后重新提交（回填上次填写的内容）
+function openApplyForm(app) {
+    document.getElementById('ap-nickname').value = app ? (app.nickname || '') : '';
+    document.getElementById('ap-game-id').value = app ? (app.game_id || '') : '';
+    document.getElementById('ap-server-area').value = app ? (app.server_area || '') : '';
+    document.getElementById('ap-game-rank').value = app ? (app.game_rank || '') : '';
+    document.getElementById('ap-specialty').value = app ? (app.specialty || '') : '';
+    document.getElementById('ap-online-time').value = app ? (app.online_time || '') : '';
+    document.getElementById('ap-intro').value = app ? (app.intro || '') : '';
+
+    // 反解「微信 abc123」形式，回填联系方式类型与号码
+    var cType = '';
+    var cValue = '';
+    if (app && app.contact) {
+        var parts = String(app.contact).split(' ');
+        var label = parts[0];
+        cValue = parts.slice(1).join(' ');
+        if (label === '微信') cType = 'wechat';
+        else if (label === 'QQ') cType = 'qq';
+        else if (label === '手机号') cType = 'phone';
+    }
+    document.getElementById('contact-type').value = cType;
+    document.getElementById('contact-value').value = cType ? cValue : '';
+    onContactTypeChange();
+
+    showApplyBox('apply-form-box');
+    var card = document.getElementById('apply-card');
+    if (card && card.scrollIntoView) card.scrollIntoView();
+}
+
+function loadApplication() {
+    var user = getUser();
+    if (!user || !user.token) {
+        showApplyBox('apply-login-box');
+        return;
+    }
+    ajaxGet('/api/application/mine', function (resp, status) {
+        if (!resp.success) {
+            var hint = document.getElementById('apply-login-hint-text');
+            if (hint) hint.textContent = resp.msg || '暂时无法加载报名信息，请重新登录后再试。';
+            showApplyBox('apply-login-box');
+            return;
+        }
+        if (resp.application_error) {
+            showToast(resp.application_error, 'error');
+        }
+        renderApplicationStatus(resp.application || null);
+        showApplyBox('apply-status-box');
+    });
+}
+
+function submitApplication() {
+    var user = getUser();
+    if (!user || !user.token) {
+        showToast('请先登录', 'error');
+        setTimeout(goLogin, 900);
+        return;
+    }
+
+    var nickname = document.getElementById('ap-nickname').value.trim();
+    var gameId = document.getElementById('ap-game-id').value.trim();
+    var serverArea = document.getElementById('ap-server-area').value;
+    var gameRank = document.getElementById('ap-game-rank').value;
+    var specialty = document.getElementById('ap-specialty').value.trim();
+    var onlineTime = document.getElementById('ap-online-time').value.trim();
+    var intro = document.getElementById('ap-intro').value.trim();
+    var contactType = document.getElementById('contact-type').value;
+    var contactValue = document.getElementById('contact-value').value.replace(/\s/g, '');
+
+    if (!gameId) {
+        showToast('请填写游戏 ID', 'error');
+        return;
+    }
+    if (!serverArea) {
+        showToast('请选择区服', 'error');
+        return;
+    }
+    if (!gameRank) {
+        showToast('请选择段位', 'error');
+        return;
+    }
+    if (!contactType) {
+        showToast('请选择联系方式类型', 'error');
+        return;
+    }
+    if (!contactValue) {
+        showToast('请填写' + (CONTACT_LABELS[contactType] || '联系方式'), 'error');
+        return;
+    }
+    if (contactType === 'phone' && !/^1\d{10}$/.test(contactValue)) {
+        showToast('手机号格式不对，请填 11 位数字', 'error');
+        return;
+    }
+    if (contactType === 'qq' && !/^\d{5,12}$/.test(contactValue)) {
+        showToast('QQ号格式不对，请填 5-12 位数字', 'error');
+        return;
+    }
+
+    ajaxPost('/api/application/submit', {
+        token: user.token,
+        nickname: nickname,
+        game_id: gameId,
+        server_area: serverArea,
+        game_rank: gameRank,
+        specialty: specialty,
+        online_time: onlineTime,
+        intro: intro,
+        contact_type: contactType,
+        contact_value: contactValue
+    }, function (resp, status) {
+        if (resp.success) {
+            showToast(resp.msg || '提交成功', 'success');
+            loadApplication();
+            return;
+        }
+        showToast(resp.msg || '提交失败', 'error');
+        if (resp.msg === '未登录' || status === 401) {
+            clearUser();
+            setTimeout(goLogin, 1200);
+        }
+    });
+}
+
+initPage(function () {
+    loadApplication();
+});
+</script>
 </body>
 </html>

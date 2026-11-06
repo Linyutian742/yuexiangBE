@@ -19,6 +19,11 @@ const EXT = {
   'image/bmp': 'bmp',
 };
 
+// 截图在 KV 里的保留时长：30 天。免费版 KV 存储只有 1GB、写只有 1000 次/天，
+// 压缩后一张约 80~220KB，永久保存迟早写满；带过期时间后稳态占用 = 30 天 × 日新增量。
+// 不够用就调大这个常量，或改走 R2（免费 10GB，但需要绑卡）。
+const SHOT_TTL_SECONDS = 30 * 24 * 60 * 60;
+
 function safeName(s) {
   return String(s || '').replace(/[\\/]/g, '_');
 }
@@ -48,7 +53,7 @@ async function storeShot(env, username, dataUrl) {
   const ext = EXT[img.mime] || 'png';
   const key = '付款记录/' + safeName(username) + '/' + stampText() + '/付款截图.' + ext;
   const opts = isKvNamespace(store)
-    ? { metadata: { contentType: img.mime } }
+    ? { metadata: { contentType: img.mime }, expirationTtl: SHOT_TTL_SECONDS }
     : { httpMetadata: { contentType: img.mime } };
   await store.put(key, img.bytes, opts);
   return key;
@@ -69,10 +74,13 @@ export async function onRequestPost({ request, env }) {
 
   // 3) 截图：优先用前端已直传得到的对象名，否则把 base64 原样转发到对象存储
   let screenshot_key = String(body.screenshot_key || '');
+  let shot_failed = false;
   if (!screenshot_key && body.screenshot) {
     try {
       screenshot_key = await storeShot(env, user.username, body.screenshot);
     } catch (e) {
+      // 不再静默吞掉：额度写满/绑定异常时告诉前端，别让管理员以为用户没传图。
+      shot_failed = true;
       screenshot_key = '';
     }
   }
@@ -98,5 +106,5 @@ export async function onRequestPost({ request, env }) {
     )
     .run();
 
-  return json({ success: true, msg: '等待管理员核对' });
+  return json({ success: true, msg: '等待管理员核对', shot_failed: shot_failed });
 }

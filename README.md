@@ -77,6 +77,7 @@
 | `POST /api/order/submit`、`GET /api/order/review` | 下单（截图转发到对象存储：KV 优先、R2 兼容）与评价 |
 | `GET /api/booster/{orders,reviews}`、`POST /api/booster/{accept,complete,cancel}` | 打手工作台，订单状态机 `pending → verified → accepted → completed` |
 | `GET /api/admin/{users,orders,reports,boosters_info,reviews}`、`POST /api/admin/user/*`（8 个）、`product/*`、`order/*`、`report/*`、`booster/*` | 管理后台全部动作，操作日志写 D1 表 `admin_log` |
+| `GET /api/admin/shot?key=付款记录/…` | 管理员专用：读取付款截图原始字节（只认 `付款记录/` 前缀，KV / R2 都能读，响应带 `Cache-Control: private, no-store`） |
 
 **不迁移的接口**：`/api/captcha/verify`、`/api/check_admin`、`/api/check_booster`、`/api/ping` —— 前端从未调用（`frontend/js/captcha.js` 里的 `verify()` 是死代码），留着也不会被触发。
 
@@ -102,8 +103,8 @@
 - **CPU 开销已按免费版 10ms 上限压过一轮**：关键路径实测表、以及为了压进这条线做的取舍（低迭代 PBKDF2 + pepper、bcrypt 默认关闭、原生 base64 解码），见下文「免费版 CPU 预算与取舍」一节。
 - **封禁语义**：旧后端封禁时会清空 token 使登录态立即失效；新实现是「token 仍可验签，各接口读到 `status='no'` 后拒绝」。目前查了 `status` 的是 `order/submit`、`profile`（都返回 403 `账号已封禁`，`profile.html` 依赖这个文案）与打手/管理员接口（返回 403 `无权限`）；**`order/review`、`change_password`、`report/submit` 只验签名不查封禁状态**，被封禁用户仍可评价/改密/举报（`report/submit` 为了保持「零 D1 读」的设计有意为之）。
 - **边缘缓存只对匿名访客生效**：`frontend/js/common.js` 会给出 `/api/` 开头的请求自动带 `Authorization` 头，带 token 的请求一律绕过缓存直读 D1，这是设计如此（避免管理员看到脏数据）。
-- **截图仍是 base64 而不是 WebP 表单**：前端 `order.html` 当前就发 base64 data URL，本次迁移不动前端，后端只做「解出字节 → 丢进对象存储」（KV 优先、R2 兼容），不二次压缩、不改格式；一个都没绑时订单照常提交，只是 `screenshot_key` 为空。
-  - **请求体越大 CPU 越贵**（JSON 解析 + base64 解码都是按体积走的），所以建议前端压缩后的截屏控制在 **≤300KB**：这个体积下下单接口整条链路约 4~5ms，1MB 会逼近 10ms 上限。
+- **截图在前端先压再发**：`order.html` 选图后用 canvas 压到长边 ≤1280px、JPEG q0.7（仍超 300KB 就再降到 1024/800、q0.5），后端只做「解出字节 → 丢进对象存储」（KV 优先、R2 兼容），不二次压缩、不改格式；一个都没绑时订单照常提交，只是 `screenshot_key` 为空。
+  - **请求体越大 CPU 越贵**（JSON 解析 + base64 解码都是按体积走的）：压缩后一般 80~220KB，下单整条链路约 4~5ms；不压缩的手机原图 1~3MB 会同时踩爆 10ms CPU 与 KV 1GB 存储（见下节）。
 - **`admin_log` 替代了 `admin_log.txt`**：边缘环境没有本地文件系统，管理员操作日志改写入 D1。
 
 ### 免费版 CPU 预算与取舍
@@ -128,6 +129,32 @@ Workers **免费版单请求 CPU 上限 10ms**（付费计划 30s）。下表为
 - **截图解码优先用运行时原生的 `Uint8Array.fromBase64`**（本机 300KB：3.0ms → 1.7ms），没有原生实现时才回落到分块 `atob`。
 - **bcrypt（41KB 纯 JS，单次约 868ms）改为动态 import 且默认关闭**：`verifyPassword` 遇到 `$2a$/$2b$/$2y$` 哈希直接判失败，几乎不耗 CPU。需要兼容旧账号时设 `PWD_ALLOW_BCRYPT=1`（**只在付费计划下用**，免费版一定超限），开启后登录成功仍会透明升级为新格式。
 - **旧 bcrypt 账号在免费版下的处理路径**：这些账号无法登录 → 用管理员账号在后台「重置密码」给它们发临时密码 `123456`（重置后自动变成新格式），或临时开 `PWD_ALLOW_BCRYPT=1` 在付费计划下让本人登录一次完成透明升级，再关掉。
+
+### 免费版额度预算（请求 / D1 / KV / 构建）
+
+对照 Cloudflare 官方限额（Pages / Workers / D1 / KV 四个 Limits 页，2026-10 版）逐项算过，**只有一项会先撞**，其余余量都在千倍量级：
+
+| 额度 | 免费版上限 | 本站用量 | 结论 |
+| --- | --- | --- | --- |
+| 静态资源请求 / 带宽 | 无限 | `frontend/` 24 个文件、约 0.45MB | 不设限 |
+| 站点文件数 / 单文件 | 20,000 个 / 25MiB | 24 个，最大 158KB | 不设限 |
+| Functions（`/api/*`）请求 | 100,000 / 天 | 一次页面浏览 0~3 次 | 余量千倍 |
+| 单请求 CPU | 10ms | 登录约 1.7ms（PBKDF2 1000 次） | 够用 |
+| D1 行读 / 行写 | 500 万 / 天、10 万 / 天 | 单次操作 1~3 行 | 够用 |
+| D1 存储 | 5GB（单库 500MB） | 订单/用户表几 MB | 够用 |
+| KV 读 / 写 | 100,000 读 / 天、**1,000 写 / 天** | 每日新增截图 ≈ 当日订单数 | 够用（≤1000 单/天） |
+| **KV 存储** | **1GB / 账号** | 原图 1~3MB/张 → **几百张就满** | **会撞，已降标准** |
+| Pages 构建 | 500 次 / 月、同时 1 个 | = push 次数 | 够用，别一天连点十几次 |
+
+注意：**只有 `/api/*` 走 Functions 计请求**，静态页/图片/JS/CSS 既不计请求也不计带宽。
+
+唯一会撞的 KV 存储已做两处「降标准」：
+
+- **截图在浏览器里压缩**（`frontend/order.html`）：长边 ≤1280px、JPEG q0.7，仍超 300KB 再降到 1024/800 与 q0.5，压缩后一般 80~220KB，单张缩掉 90% 以上。
+- **KV 里的截图保留 30 天后自动删除**（`functions/api/order/submit.js` 的 `SHOT_TTL_SECONDS`）：写入带 `expirationTtl`，稳态占用 = 30 天 × 日新增量，长期不会涨满 1GB。**代价是 30 天前的订单截图失效**；要更久就调大该常量，或改走 R2（免费 10GB，但需绑卡）。
+- 附带：KV 写失败不再被静默吞掉，下单接口返回 `shot_failed: true`，下单页提示「截图没存上，请私聊发给客服」。
+
+**付款截图现在能在后台直接看**：`GET /api/admin/shot?key=<截图地址>` —— 管理员专用（`op_level >= 3`），只认 `付款记录/` 前缀、拒绝 `..` 与反斜杠，KV 与 R2 都能读，返回原始字节且带 `Cache-Control: private, no-store`。`admin.html` 订单表新增「付款截图」列，有图的订单点「查看」即弹窗显示（前端用带 `Authorization` 头的 XHR 取回 blob 再显示，token 不进 URL）；没图显示「无」，超过 30 天或已被清理则提示「截图不存在或已过期（截图只保留 30 天）」。
 
 ### 本地验证
 

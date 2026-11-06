@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "nickname": "战神阿强",
+    "level": "钻石",
+    "specialty": "王者荣耀、和平精英",
+    "introduction": "千场老玩家，带飞稳定，脾气好，包赢包售后。"
+  },
+  {
+    "id": 2,
+    "nickname": "冷面枪王",
+    "level": "大师",
+    "specialty": "穿越火线、CSGO",
+    "introduction": "职业退役选手，狙击专精，效率极高，可直播代打。"
+  },
+  {
+    "id": 3,
+    "nickname": "温柔小仙女",
+    "level": "铂金",
+    "specialty": "LOL、云顶之弈",
+    "introduction": "声音好听，耐心教学，娱乐上分两不误。"
+  },
+  {
+    "id": 4,
+    "nickname": "闪电手",
+    "level": "宗师",
+    "specialty": "DOTA2、星际争霸2",
+    "introduction": "APM 300+，极限操作，高端局专业打手，非诚勿扰。"
+  }
+]

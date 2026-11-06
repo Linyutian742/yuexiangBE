@@ -101,16 +101,54 @@ function onContactTypeChange() {
     row.className = 'contact-row filled';
 }
 
+// 上传前压缩：长边最多 1280px、JPEG q=0.7，仍超 300KB 就再降到 1024/800、q=0.5。
+// 手机原图 1~3MB 会同时踩爆两件事：免费版 10ms CPU（请求体越大 JSON 解析+base64 解码越贵）
+// 和免费版 KV 1GB 存储（原图只能存几百张就写满）。压缩后一般 80~220KB。
+var SHOT_MAX_EDGE = 1280;
+var SHOT_HARD_LIMIT = 300 * 1024; // 限制的是 data URL 字符串长度（1 字符 base64 约 0.75 字节）
+
+function shrinkShot(img, maxEdge, quality) {
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    if (!w || !h) return '';
+    var scale = Math.min(1, maxEdge / Math.max(w, h));
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(w * scale));
+    canvas.height = Math.max(1, Math.round(h * scale));
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    try {
+        return canvas.toDataURL('image/jpeg', quality);
+    } catch (e) {
+        return '';
+    }
+}
+
+function applyShot(dataUrl, fileName) {
+    screenshotBase64 = dataUrl;
+    var img = document.getElementById('screenshot-preview');
+    img.src = dataUrl;
+    img.className = 'file-preview';
+    document.getElementById('upload-area').textContent =
+        '已选择: ' + fileName + '（' + Math.round(dataUrl.length / 1024) + 'KB）';
+}
+
 function previewScreenshot(input) {
     if (!input.files || input.files.length === 0) return;
     var file = input.files[0];
     var reader = new FileReader();
     reader.onload = function (e) {
-        screenshotBase64 = e.target.result;
-        var img = document.getElementById('screenshot-preview');
-        img.src = e.target.result;
-        img.className = 'file-preview';
-        document.getElementById('upload-area').textContent = '已选择: ' + file.name;
+        var raw = e.target.result;
+        var probe = new Image();
+        // 压不动就退回原图，不能因为压缩失败就让用户传不了单。
+        probe.onerror = function () { applyShot(raw, file.name); };
+        probe.onload = function () {
+            var out = shrinkShot(probe, SHOT_MAX_EDGE, 0.7);
+            if (out.length > SHOT_HARD_LIMIT) out = shrinkShot(probe, 1024, 0.5) || out;
+            if (out.length > SHOT_HARD_LIMIT) out = shrinkShot(probe, 800, 0.5) || out;
+            applyShot(out || raw, file.name);
+        };
+        probe.src = raw;
     };
     reader.readAsDataURL(file);
 }
@@ -182,10 +220,15 @@ function submitOrder() {
         designated_booster: designatedBooster
     }, function (resp) {
         if (resp.success) {
-            showToast(resp.msg || '提交成功', 'success');
+            // 截图没存上（KV 写失败/额度满）不能让用户以为一切正常。
+            if (resp.shot_failed) {
+                showToast('订单已提交，但截图没存上，请把截图私聊发给客服', 'error');
+            } else {
+                showToast(resp.msg || '提交成功', 'success');
+            }
             setTimeout(function () {
                 window.location.href = 'profile.html';
-            }, 1200);
+            }, resp.shot_failed ? 2800 : 1200);
         } else {
             showToast(resp.msg || '提交失败', 'error');
             if (resp.msg === '未登录') {

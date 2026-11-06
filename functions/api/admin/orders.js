@@ -11,7 +11,7 @@ export async function onRequestGet({ request, env }) {
   let res;
   try {
     res = await env.DB.prepare(
-      'SELECT id, uid, username, product_title, order_no, game_id, server_area, message, designated_booster, booster, status, reject_reason, submit_time FROM orders ORDER BY id DESC'
+      'SELECT id, uid, username, product_title, screenshot_key, order_no, game_id, server_area, message, designated_booster, booster, status, reject_reason, submit_time FROM orders ORDER BY id DESC'
     ).all();
   } catch (e) {
     return json({ success: false, msg: '订单读取失败：' + ((e && e.message) || e) }, 500);
@@ -23,6 +23,7 @@ export async function onRequestGet({ request, env }) {
     username: o.username || '',
     product_title: o.product_title || '',
     order_no: o.order_no || '',
+    screenshot_key: o.screenshot_key || '',
     game_id: o.game_id || '',
     server_area: o.server_area || '',
     message: o.message || '',

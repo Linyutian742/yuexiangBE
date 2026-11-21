@@ -57,6 +57,7 @@
             <div class="admin-tab" onclick="switchTab('users')" id="tab-users">用户管理</div>
             <div class="admin-tab" onclick="switchTab('reviews')" id="tab-reviews">评价管理</div>
             <div class="admin-tab" onclick="switchTab('applications')" id="tab-applications">报名管理</div>
+            <div class="admin-tab" onclick="switchTab('feedback')" id="tab-feedback">反馈管理</div>
         </div>
 
         <!-- Orders Tab -->
@@ -114,6 +115,18 @@
                 </div>
             </div>
         </div>
+        <!-- Feedback Tab -->
+        <div id="section-feedback" class="hidden">
+            <div class="admin-section">
+                <div class="admin-section-title">反馈列表 <button class="btn btn-secondary btn-small" onclick="loadFeedback()" style="float:right;">刷新</button></div>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>ID</th><th>用户</th><th>类型</th><th>内容</th><th>联系方式</th><th>时间</th><th>状态</th><th>操作</th></tr></thead>
+                        <tbody id="feedback-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -146,7 +159,7 @@ function checkAdminAccess(callback) {
 
 function switchTab(tab) {
     currentTab = tab;
-    var sections = ['orders', 'reports', 'users', 'reviews', 'applications'];
+    var sections = ['orders', 'reports', 'users', 'reviews', 'applications', 'feedback'];
     for (var i = 0; i < sections.length; i++) {
         var el = document.getElementById('section-' + sections[i]);
         var tabEl = document.getElementById('tab-' + sections[i]);
@@ -585,6 +598,102 @@ function deleteApplication(id) {
     });
 }
 
+// ==================== Feedback ====================
+var feedbackCache = [];
+
+function loadFeedback() {
+    ajaxGet('/api/admin/feedback', function (resp) {
+        var tbody = document.getElementById('feedback-tbody');
+        if (!resp.success) { setTableState(tbody, 8, resp.msg || '反馈加载失败', true); showToast(resp.msg || '反馈加载失败', 'error'); return; }
+        var list = resp.feedback || [];
+        if (!list.length) { setTableState(tbody, 8, '暂无反馈', false); return; }
+        feedbackCache = list;
+        var html = '';
+        for (var i = 0; i < list.length; i++) {
+            var f = list[i];
+            var statusText, statusColor;
+            if (f.status === 'handled') {
+                statusText = '已处理';
+                statusColor = '#22c55e';
+            } else if (f.status === 'rejected') {
+                statusText = '不通过';
+                statusColor = '#ef4444';
+            } else {
+                statusText = '待处理';
+                statusColor = '#f59e0b';
+            }
+            html += '<tr><td>' + f.id + '</td><td>' + escapeHtml(f.username || '') + '</td>';
+            html += '<td>' + escapeHtml(f.category || '-') + '</td>';
+            html += '<td class="admin-fb-content">' + escapeHtml(clampText(f.content, 40)) + '</td>';
+            html += '<td>' + escapeHtml(f.contact || '-') + '</td>';
+            html += '<td>' + escapeHtml(f.submit_time || '') + '</td>';
+            html += '<td style="color:' + statusColor + ';">' + statusText;
+            if (f.status === 'rejected' && f.reject_reason) {
+                html += '<br><span style="font-size:11px;color:#94a3b8;">(' + escapeHtml(f.reject_reason) + ')</span>';
+            }
+            html += '</td><td>';
+            if (f.status === 'pending') {
+                html += '<button class="btn btn-success admin-action-btn" onclick="handleFeedback(' + f.id + ')">已处理</button>';
+                html += '<button class="btn btn-secondary admin-action-btn" onclick="rejectFeedback(' + f.id + ')">不通过</button>';
+            }
+            html += '<button class="btn btn-secondary admin-action-btn" onclick="showFeedback(' + f.id + ')">详情</button>';
+            html += '<button class="btn btn-danger admin-action-btn" onclick="deleteFeedback(' + f.id + ')">删除</button>';
+            html += '</td></tr>';
+        }
+        tbody.innerHTML = html;
+    });
+}
+
+// 列表里的内容列只放前 40 字，全文与联系方式走「详情」弹窗，避免表格被长文本撑坏。
+function clampText(text, n) {
+    text = String(text == null ? '' : text);
+    return text.length > n ? text.slice(0, n) + '\u2026' : text;
+}
+
+function showFeedback(id) {
+    var list = feedbackCache || [];
+    var f = null;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === id) { f = list[i]; break; } }
+    if (!f) { showToast('未找到该反馈', 'error'); return; }
+    var statusText = f.status === 'handled' ? '已处理' : (f.status === 'rejected' ? '不通过' : '待处理');
+    var body = '<div class="fb-detail">';
+    body += '<div><span class="fb-detail-k">编号</span>' + escapeHtml(String(f.id)) + '</div>';
+    body += '<div><span class="fb-detail-k">用户</span>' + escapeHtml(f.username || '（未登录 / 已注销）') + '</div>';
+    body += '<div><span class="fb-detail-k">类型</span>' + escapeHtml(f.category || '-') + '</div>';
+    body += '<div><span class="fb-detail-k">联系方式</span>' + escapeHtml(f.contact || '-') + '</div>';
+    body += '<div><span class="fb-detail-k">提交时间</span>' + escapeHtml(f.submit_time || '') + '</div>';
+    body += '<div><span class="fb-detail-k">状态</span>' + statusText + (f.reject_reason ? '（' + escapeHtml(f.reject_reason) + '）' : '') + '</div>';
+    body += '<div class="fb-detail-content">' + escapeHtml(f.content || '') + '</div>';
+    body += '</div>';
+    showModal('反馈详情 #' + f.id, body, 'feedback-modal');
+}
+
+function handleFeedback(id) {
+    ajaxPost('/api/admin/feedback/handle', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) { showToast('已处理', 'success'); loadFeedback(); }
+        else { showToast(resp.msg || '操作失败', 'error'); }
+    });
+}
+
+function rejectFeedback(id) {
+    var reason = prompt('请输入不通过原因：', '反馈不实');
+    if (reason === null) return;
+    reason = reason.trim();
+    if (!reason) reason = '反馈不实';
+    ajaxPost('/api/admin/feedback/reject', { token: getAdminToken(), id: id, reason: reason }, function (resp) {
+        if (resp.success) { showToast('已驳回', 'success'); loadFeedback(); }
+        else { showToast(resp.msg || '操作失败', 'error'); }
+    });
+}
+
+function deleteFeedback(id) {
+    if (!confirm('确定删除该反馈记录？删除后不可恢复')) return;
+    ajaxPost('/api/admin/feedback/delete', { token: getAdminToken(), id: id }, function (resp) {
+        if (resp.success) { showToast('已删除', 'success'); loadFeedback(); }
+        else { showToast(resp.msg || '删除失败', 'error'); }
+    });
+}
+
 // ==================== Init ====================
 initPage(function () {
     checkAdminAccess(function () {
@@ -605,6 +714,7 @@ initPage(function () {
         loadUsers();
         loadReviews();
         loadApplications();
+        loadFeedback();
     });
 });
 </script>

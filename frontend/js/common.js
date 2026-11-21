@@ -135,6 +135,7 @@ function renderNavbar() {
     navHtml += '<a href="products.html">商品</a>';
     navHtml += '<a href="booster-info.html">打手</a>';
     navHtml += '<a href="report.html">举报</a>';
+    navHtml += '<a href="feedback.html">反映问题</a>';
     if (user && user.token) {
         navHtml += '<span style="color:#a855f7;font-size:15px;">' + escapeHtml(user.username) + '</span>';
         if (user.op_level >= 2) {
@@ -160,6 +161,9 @@ function renderNavbar() {
     navHtml += '</div>';
     navHtml += '<div class="nav-dropdown-section" style="display:flex;justify-content:space-between;">';
     navHtml += '<span>举报</span><a href="report.html">前往</a>';
+    navHtml += '</div>';
+    navHtml += '<div class="nav-dropdown-section" style="display:flex;justify-content:space-between;">';
+    navHtml += '<span>反映问题</span><a href="feedback.html">前往</a>';
     navHtml += '</div>';
     navHtml += '<div class="nav-dropdown-divider"></div>';
 

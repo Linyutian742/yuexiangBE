@@ -933,6 +933,39 @@ textarea.form-input {
     color: #64748b;
 }
 
+/* 反馈内容列：只展示前若干字，完整内容走「详情」弹窗 */
+.admin-fb-content {
+    max-width: 260px;
+    word-break: break-word;
+}
+
+/* 反馈详情弹窗（复用 common.js 的 showModal，第三个参数追加类名） */
+.feedback-modal {
+    max-width: 620px;
+}
+
+.fb-detail {
+    font-size: 14px;
+    color: #e2e8f0;
+    line-height: 1.9;
+}
+
+.fb-detail-k {
+    display: inline-block;
+    width: 72px;
+    color: #94a3b8;
+}
+
+.fb-detail-content {
+    margin-top: 10px;
+    padding: 10px;
+    background: #0f0f1a;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .shot-box {
     text-align: center;
 }
@@ -1304,5 +1337,377 @@ textarea.form-input {
     .app-result-label {
         -webkit-flex: 0 0 72px;
         flex: 0 0 72px;
+    }
+}
+
+/* ==================== Feedback（反映问题） ==================== */
+.fb-card {
+    max-width: 440px;
+}
+
+.fb-intro {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.7;
+    margin: -12px 0 18px;
+}
+
+/* 两种方式的切换：左「在线提交」右「扫码联系」 */
+.fb-switch {
+    display: -webkit-flex;
+    display: flex;
+    margin-bottom: 20px;
+    border: 1px solid #2a2a3e;
+    background: #141422;
+}
+
+.fb-switch-item {
+    -webkit-flex: 1 1 50%;
+    flex: 1 1 50%;
+    text-align: center;
+    padding: 10px 6px;
+    color: #94a3b8;
+    font-size: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s, color 0.2s;
+}
+
+.fb-switch-item.active {
+    background: #a855f7;
+    color: #fff;
+}
+
+.fb-submit {
+    width: 100%;
+}
+
+.fb-login-hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #f59e0b;
+    line-height: 1.7;
+}
+
+/* 扫码联系：白底留出扫码所需的静空区 */
+.fb-qr-box {
+    width: 240px;
+    height: 240px;
+    margin: 4px auto 16px;
+    background: #ffffff;
+    border: 2px solid #a855f7;
+    box-shadow: 0 0 22px rgba(168, 85, 247, 0.35);
+    display: -webkit-flex;
+    display: flex;
+    -webkit-align-items: center;
+    align-items: center;
+    -webkit-justify-content: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.fb-qr-img {
+    width: 100%;
+    height: 100%;
+    -o-object-fit: contain;
+    object-fit: contain;
+    display: block;
+}
+
+.fb-qr-tip {
+    text-align: center;
+    color: #e2e8f0;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.fb-qr-extra {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.fb-qr-extra span {
+    color: #a855f7;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* 放在文件最后，避免被上方 .form-card 的移动端规则覆盖面宽 */
+@media screen and (max-width: 768px) {
+    .fb-card {
+        max-width: 100%;
+    }
+    .fb-switch-item {
+        padding: 9px 4px;
+        font-size: 13px;
+    }
+    .fb-qr-box {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+/* ==================== 助力走失儿童（missing.html） ==================== */
+.mz-card {
+    max-width: 640px;
+}
+
+.mz-lead {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.85;
+    margin: -10px 0 22px;
+}
+
+/* 顶部应急：打 110 */
+.mz-alert {
+    border: 1px solid #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.mz-alert-title {
+    color: #f87171;
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.mz-alert-text {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.85;
+    margin-bottom: 14px;
+}
+
+.mz-110 {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: 14px 0;
+    background: #ef4444;
+    color: #ffffff !important;
+    font-size: 20px;
+    font-weight: bold;
+    letter-spacing: 3px;
+}
+
+.mz-110:hover {
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.55);
+    text-shadow: none;
+}
+
+.mz-110-tip {
+    margin-top: 8px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+/* 小节标题 */
+.mz-h {
+    color: #a855f7;
+    font-size: 16px;
+    font-weight: bold;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a2a3e;
+    margin: 26px 0 14px;
+}
+
+/* 渠道条目 */
+.mz-item {
+    display: block;
+    border: 1px solid #2a2a3e;
+    background: #141422;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+}
+
+a.mz-item {
+    color: inherit;
+}
+
+a.mz-item:hover {
+    border-color: #a855f7;
+    text-shadow: none;
+}
+
+.mz-item-top {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-align-items: center;
+    align-items: center;
+    -webkit-justify-content: space-between;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.mz-item-name {
+    color: #e2e8f0;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.mz-item-tag {
+    -webkit-flex: 0 0 auto;
+    flex: 0 0 auto;
+    margin-left: 10px;
+    padding: 1px 8px;
+    border: 1px solid #2a2a3e;
+    color: #94a3b8;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.mz-item-tag.official {
+    color: #22c55e;
+    border-color: #22c55e;
+}
+
+.mz-item-tag.civil {
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.mz-item-tag.local {
+    color: #a855f7;
+    border-color: #a855f7;
+}
+
+.mz-item-desc {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+.mz-item-link {
+    color: #a855f7;
+    font-size: 12px;
+    margin-top: 8px;
+    word-break: break-all;
+}
+
+/* 步骤 */
+.mz-step {
+    display: -webkit-flex;
+    display: flex;
+    margin-bottom: 16px;
+}
+
+.mz-step-no {
+    -webkit-flex: 0 0 24px;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    margin-right: 10px;
+    margin-top: 2px;
+    text-align: center;
+    background: #a855f7;
+    color: #ffffff;
+    font-size: 13px;
+    border-radius: 50%;
+}
+
+.mz-step-body {
+    -webkit-flex: 1 1 auto;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.mz-step-title {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.mz-step-desc {
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+/* 红线提示 */
+.mz-redline {
+    border-left: 3px solid #ef4444;
+    background: rgba(239, 68, 68, 0.06);
+    padding: 12px 14px;
+    margin-top: 4px;
+}
+
+.mz-redline-title {
+    color: #f87171;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.mz-redline-desc {
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+/* 免责与合规声明 */
+.mz-note {
+    max-width: 640px;
+    margin: 0 auto 40px;
+    border: 1px dashed #2a2a3e;
+    background: #0f0f1a;
+    padding: 16px;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.9;
+}
+
+.mz-note p {
+    margin-bottom: 6px;
+}
+
+.mz-note p:last-child {
+    margin-bottom: 0;
+}
+
+.mz-note-strong {
+    color: #94a3b8;
+    font-weight: bold;
+}
+
+/* 769–900px：一级菜单变多后收紧间距，避免与右侧用户名挤在一起 */
+@media screen and (min-width: 769px) and (max-width: 900px) {
+    .nav-links {
+        gap: 10px;
+    }
+    .nav-links a {
+        padding: 6px 6px;
+        font-size: 14px;
+    }
+}
+
+/* 移动端：与 .form-card 的窄屏规则保持一致 */
+@media screen and (max-width: 768px) {
+    .mz-card {
+        max-width: 100%;
+    }
+    .mz-alert {
+        padding: 14px 12px;
+    }
+    .mz-110 {
+        font-size: 18px;
+    }
+    .mz-item {
+        padding: 12px;
+    }
+    .mz-item-top {
+        -webkit-flex-wrap: wrap;
+        flex-wrap: wrap;
+    }
+    .mz-note {
+        margin: 0 0 24px;
+        padding: 12px;
     }
 }

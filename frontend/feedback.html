@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>反映问题 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="form-card fb-card">
+        <div class="form-title">反映问题</div>
+        <p class="fb-intro">遇到问题可以两种方式反馈：直接在这里提交，或者扫码联系我们。</p>
+
+        <div class="fb-switch">
+            <div class="fb-switch-item active" id="fb-tab-form" onclick="switchFeedback('form')">在线提交</div>
+            <div class="fb-switch-item" id="fb-tab-qr" onclick="switchFeedback('qr')">扫码联系</div>
+        </div>
+
+        <!-- 方式一：直接填表提交到网站 -->
+        <div id="fb-panel-form">
+            <div class="form-group">
+                <label>问题类型</label>
+                <select class="form-input" id="fb-category">
+                    <option value="功能异常">功能异常（页面打不开、按钮没反应）</option>
+                    <option value="订单与充值">订单与充值</option>
+                    <option value="账号与登录">账号与登录</option>
+                    <option value="体验建议">体验建议</option>
+                    <option value="其他">其他</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>问题描述</label>
+                <textarea class="form-input" id="fb-content" maxlength="1000" placeholder="请写清楚：遇到什么问题、在哪个页面、大概什么时候发生的"></textarea>
+            </div>
+            <div class="form-group">
+                <label>联系方式（选填）</label>
+                <input type="text" class="form-input" id="fb-contact" maxlength="60" autocomplete="off" placeholder="微信 / QQ / 手机号，方便我们回复你">
+            </div>
+            <button class="btn btn-primary fb-submit" onclick="submitFeedback()">提交问题</button>
+            <div class="fb-login-hint" id="fb-login-hint"></div>
+        </div>
+
+        <!-- 方式二：扫码联系 -->
+        <div id="fb-panel-qr" class="hidden">
+            <div class="fb-qr-box">
+                <img class="fb-qr-img" src="feedback-qr.png" alt="反映问题联系二维码">
+            </div>
+            <p class="fb-qr-tip">长按识别或扫码，直接联系我们</p>
+            <p class="fb-qr-extra">也可以直接加 QQ 交流群：<span>1131015992</span></p>
+        </div>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script>
+// 反映问题页：两种方式（在线提交 / 扫码联系）。
+// 未登录也能打开本页与查看二维码，但「在线提交」需要登录（提交时服务端与前端各验一次）。
+var FB_MIN_CONTENT = 5;
+
+function switchFeedback(tab) {
+    var formTab = document.getElementById('fb-tab-form');
+    var qrTab = document.getElementById('fb-tab-qr');
+    var formPanel = document.getElementById('fb-panel-form');
+    var qrPanel = document.getElementById('fb-panel-qr');
+    if (tab === 'qr') {
+        if (formTab) formTab.className = 'fb-switch-item';
+        if (qrTab) qrTab.className = 'fb-switch-item active';
+        if (formPanel) formPanel.className = 'hidden';
+        if (qrPanel) qrPanel.className = '';
+    } else {
+        if (formTab) formTab.className = 'fb-switch-item active';
+        if (qrTab) qrTab.className = 'fb-switch-item';
+        if (formPanel) formPanel.className = '';
+        if (qrPanel) qrPanel.className = 'hidden';
+    }
+}
+
+function submitFeedback() {
+    var user = getUser();
+    if (!user || !user.token) {
+        showToast('请先登录后再提交', 'error');
+        setTimeout(function () {
+            window.location.href = 'login.html';
+        }, 1200);
+        return;
+    }
+
+    var categoryEl = document.getElementById('fb-category');
+    var contentEl = document.getElementById('fb-content');
+    var contactEl = document.getElementById('fb-contact');
+    var category = categoryEl ? categoryEl.value : '';
+    var content = contentEl ? contentEl.value.replace(/^\s+|\s+$/g, '') : '';
+    var contact = contactEl ? contactEl.value.replace(/^\s+|\s+$/g, '') : '';
+
+    if (!content) {
+        showToast('请填写问题描述', 'error');
+        return;
+    }
+    if (content.length < FB_MIN_CONTENT) {
+        showToast('问题描述太短了，请多写几个字', 'error');
+        return;
+    }
+
+    ajaxPost('/api/feedback/submit', {
+        token: user.token,
+        category: category,
+        content: content,
+        contact: contact
+    }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '提交成功', 'success');
+            if (contentEl) contentEl.value = '';
+            if (contactEl) contactEl.value = '';
+        } else {
+            showToast(resp.msg || '提交失败', 'error');
+            if (resp.msg === '未登录') {
+                setTimeout(function () {
+                    window.location.href = 'login.html';
+                }, 1000);
+            }
+        }
+    });
+}
+
+initPage(function () {
+    // 未登录只给提示，不整页跳转——扫码方式不需要登录
+    var user = getUser();
+    var hint = document.getElementById('fb-login-hint');
+    if (hint && (!user || !user.token)) {
+        hint.innerHTML = '在线提交需要先登录。如果登录不了，请改用上面的「扫码联系」。';
+    }
+});
+</script>
+</body>
+</html>

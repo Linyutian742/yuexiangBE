@@ -141,6 +141,10 @@ function renderNavbar() {
         if (user.op_level >= 2) {
             navHtml += '<a href="booster.html" class="nav-booster-link">打手接单</a>';
         }
+        // 订单推送入口只给 OP 等级正好为 2 的打手（等级 3 管理员走后台，不进推送通道）
+        if (Number(user.op_level || 1) === 2) {
+            navHtml += '<a href="push.html" class="nav-booster-link">订单推送</a>';
+        }
     } else {
         navHtml += '<a href="login.html" class="nav-login">登录</a>';
     }
@@ -183,6 +187,9 @@ function renderNavbar() {
     if (user && user.op_level >= 2) {
         navHtml += '<div class="nav-dropdown-divider"></div>';
         navHtml += '<a href="booster.html" class="nav-booster-link">打手接单</a>';
+    }
+    if (user && Number(user.op_level || 1) === 2) {
+        navHtml += '<a href="push.html" class="nav-booster-link">订单推送</a>';
     }
     if (user && user.op_level >= 3) {
         navHtml += '<a href="admin.html" class="nav-admin-link">管理员后台</a>';

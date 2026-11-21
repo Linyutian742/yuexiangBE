@@ -39,6 +39,15 @@ export async function currentBooster(request, body, env) {
   return u;
 }
 
+// 推送通道专用：严格 op_level == 2 的未封禁打手。
+// 与 currentBooster 的 >= 2 区分开——订单推送只发给等级正好为 2 的打手，等级 3 的管理员不进这条通道。
+export async function currentPushBooster(request, body, env) {
+  const u = await currentUser(request, body, env);
+  if (!u || u.status !== 'yes') return null;
+  if (Number(u.op_level || 1) !== 2) return null;
+  return u;
+}
+
 // 管理员：op_level >= 3
 export async function currentAdmin(request, body, env) {
   const u = await currentUser(request, body, env);

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>订单推送 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.push-card {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3e;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+.push-card.unread {
+    border-color: #a855f7;
+    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.35);
+}
+.push-card .order-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+.push-card .order-label {
+    color: #64748b;
+    min-width: 80px;
+}
+.push-card .order-value {
+    color: #e2e8f0;
+    text-align: right;
+    flex: 1;
+}
+.push-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.push-unread-tip {
+    color: #a855f7;
+    font-size: 14px;
+}
+.push-empty {
+    color: #64748b;
+    text-align: center;
+    padding: 24px;
+}
+.push-card .push-time {
+    color: #64748b;
+    font-size: 12px;
+    margin-top: 6px;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="form-title" style="margin-bottom:16px;">订单推送</div>
+
+    <div class="push-bar">
+        <div class="push-unread-tip" id="push-unread">未读 0 条</div>
+        <div>
+            <button class="btn btn-secondary btn-small" onclick="loadPush()">刷新</button>
+            <button class="btn btn-secondary btn-small" onclick="markAllRead()">全部标为已读</button>
+        </div>
+    </div>
+
+    <div id="push-list"></div>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+// 只有 OP 等级 = 2 的打手能进这个页面：先本地粗筛，真正的判定在服务端（/api/booster/push 对非等级 2 返回 403）。
+var lastPushId = 0;
+var pushTimer = null;
+
+function getToken() {
+    var user = getUser();
+    return user ? user.token : '';
+}
+
+function canUsePush() {
+    var user = getUser();
+    if (!user || !user.token) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    if (Number(user.op_level || 1) !== 2) {
+        document.getElementById('push-list').innerHTML =
+            '<div class="push-empty">当前账号的 OP 等级不是 2，没有订单推送权限。</div>';
+        return false;
+    }
+    return true;
+}
+
+function renderPushCard(m) {
+    var html = '<div class="push-card' + (m.read ? '' : ' unread') + '" id="push-' + m.id + '">';
+    html += '<div class="order-row"><span class="order-label">订单号</span><span class="order-value">#' + m.order_id + '</span></div>';
+    html += '<div class="order-row"><span class="order-label">点单人</span><span class="order-value">' + escapeHtml(m.username || '-') + '</span></div>';
+    html += '<div class="order-row"><span class="order-label">商品</span><span class="order-value">' + escapeHtml(m.product_title || '-') + '</span></div>';
+    if (m.game_id) {
+        html += '<div class="order-row"><span class="order-label">游戏ID</span><span class="order-value">' + escapeHtml(m.game_id) + '</span></div>';
+    }
+    if (m.server_area) {
+        html += '<div class="order-row"><span class="order-label">区服</span><span class="order-value">' + escapeHtml(m.server_area) + '</span></div>';
+    }
+    var cm = splitOrderMessage(m.message);
+    if (cm.contact) {
+        html += '<div class="order-row"><span class="order-label">联系方式</span><span class="order-value" style="color:#a855f7;">' + escapeHtml(cm.contact) + '</span></div>';
+    }
+    if (cm.message) {
+        html += '<div class="order-row"><span class="order-label">留言</span><span class="order-value">' + escapeHtml(cm.message) + '</span></div>';
+    }
+    html += '<div class="order-row"><span class="order-label">下单时间</span><span class="order-value">' + escapeHtml(m.submit_time || '') + '</span></div>';
+    var stText = m.order_status === 'verified' ? '待接单' : (m.order_status === 'accepted' ? '已被接走' : (m.order_status || ''));
+    if (m.order_status === 'completed') stText = '已完成';
+    if (m.order_status === 'rejected') stText = '已驳回';
+    html += '<div class="order-row"><span class="order-label">订单状态</span><span class="order-value">' + escapeHtml(stText) + '</span></div>';
+    html += '<div class="push-time">推送时间：' + escapeHtml(m.created_at || '') + (m.read ? '' : ' · 未读') + '</div>';
+    if (m.order_status === 'verified') {
+        html += '<div style="margin-top:10px;"><button class="btn btn-primary btn-small" onclick="acceptPushed(' + m.id + ',' + m.order_id + ')">接单</button></div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+function loadPush() {
+    if (!canUsePush()) return;
+    ajaxGet('/api/booster/push?since=' + lastPushId, function (resp, status) {
+        var list = document.getElementById('push-list');
+        if (status === 403 || !resp.success) {
+            list.innerHTML = '<div class="push-empty">没有订单推送权限（仅 OP 等级为 2 的打手可看）。</div>';
+            document.getElementById('push-unread').innerHTML = '未读 0 条';
+            return;
+        }
+        var msgs = resp.messages || [];
+        if (lastPushId === 0) {
+            list.innerHTML = msgs.length
+                ? msgs.slice().reverse().map(renderPushCard).join('')
+                : '<div class="push-empty">还没有推送来的订单，审核通过后会出现在这里。</div>';
+        } else if (msgs.length) {
+            var html = '';
+            for (var i = msgs.length - 1; i >= 0; i--) {
+                html += renderPushCard(msgs[i]);
+            }
+            list.innerHTML = html + list.innerHTML;
+        }
+        for (var i = 0; i < msgs.length; i++) {
+            if (msgs[i].id > lastPushId) lastPushId = msgs[i].id;
+        }
+        if (resp.last_id > lastPushId) lastPushId = resp.last_id;
+        document.getElementById('push-unread').innerHTML = '未读 ' + (resp.unread || 0) + ' 条';
+    });
+}
+
+function acceptPushed(pushId, orderId) {
+    if (!confirm('确定接此订单?')) return;
+    ajaxPost('/api/booster/accept', { token: getToken(), id: orderId }, function (resp) {
+        if (resp.success) {
+            showToast(resp.msg || '接单成功', 'success');
+            ajaxPost('/api/booster/push_read', { token: getToken(), id: pushId }, function () {});
+            loadPush();
+        } else {
+            showToast(resp.msg || '接单失败', 'error');
+        }
+    });
+}
+
+function markAllRead() {
+    ajaxPost('/api/booster/push_read', { token: getToken(), all: true }, function (resp) {
+        if (resp.success) {
+            showToast('已全部标为已读', 'success');
+            lastPushId = 0;
+            loadPush();
+        } else {
+            showToast(resp.msg || '操作失败', 'error');
+        }
+    });
+}
+
+initPage(function () {
+    if (!canUsePush()) return;
+    loadPush();
+    // 页面开着时 30 秒自动拉一次，等同 App 里的后台轮询
+    pushTimer = setInterval(loadPush, 30000);
+});
+</script>
+</body>
+</html>

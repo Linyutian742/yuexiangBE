@@ -169,6 +169,9 @@ function renderNavbar() {
     navHtml += '<div class="nav-dropdown-section" style="display:flex;justify-content:space-between;">';
     navHtml += '<span>反映问题</span><a href="feedback.html">前往</a>';
     navHtml += '</div>';
+    navHtml += '<div class="nav-dropdown-section" style="display:flex;justify-content:space-between;">';
+    navHtml += '<span>App 下载</span><a href="app-download.html">前往</a>';
+    navHtml += '</div>';
     navHtml += '<div class="nav-dropdown-divider"></div>';
 
     if (user && user.token) {

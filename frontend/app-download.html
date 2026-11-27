@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>App 下载 - 悦翔电竞</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+/* 仅本页使用的排版，颜色沿用站点主题（紫 #a855f7 / 暗底 #0f0f1a） */
+.app-page h3 {
+    color: #e2e8f0;
+    font-size: 16px;
+    margin: 22px 0 8px;
+}
+.app-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0 18px;
+}
+.app-meta-item {
+    border: 1px solid #2a2a3e;
+    background: #14141f;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #94a3b8;
+}
+.app-meta-item b {
+    color: #a855f7;
+    font-weight: normal;
+    margin-left: 4px;
+}
+.app-download-btn {
+    display: block;
+    text-align: center;
+    margin: 4px 0 8px;
+}
+.app-hash {
+    font-size: 11px;
+    color: #475569;
+    word-break: break-all;
+    line-height: 1.6;
+    margin-bottom: 6px;
+}
+.app-page ol.app-steps {
+    list-style: decimal;
+    padding-left: 20px;
+    color: #94a3b8;
+    line-height: 1.8;
+}
+.app-page ol.app-steps li {
+    margin-bottom: 8px;
+}
+.app-page ul.app-list {
+    list-style: none;
+}
+.app-page ul.app-list li {
+    color: #94a3b8;
+    line-height: 1.8;
+    padding-left: 14px;
+    position: relative;
+}
+.app-page ul.app-list li:before {
+    content: "\2022";
+    color: #a855f7;
+    position: absolute;
+    left: 0;
+}
+.app-page dl.app-faq dt {
+    color: #e2e8f0;
+    font-size: 14px;
+    margin-top: 12px;
+}
+.app-page dl.app-faq dd {
+    color: #94a3b8;
+    line-height: 1.8;
+}
+.app-note {
+    border-left: 3px solid #a855f7;
+    background: #14141f;
+    padding: 10px 12px;
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.8;
+    margin: 12px 0 4px;
+}
+</style>
+</head>
+<body>
+<div id="nav-container"></div>
+<div class="main-content">
+    <div class="static-page app-page">
+        <h2>App 下载</h2>
+        <p>把悦翔电竞装到手机上：商品、点单、订单查询照常用，另外管理后台审核通过的新订单会自动弹系统通知——只推给打手，其他账号收不到。</p>
+
+        <div class="app-meta">
+            <div class="app-meta-item">版本<b>1.0.2</b></div>
+            <div class="app-meta-item">大小<b>约 69 KB</b></div>
+            <div class="app-meta-item">系统要求<b>Android 5.0 及以上</b></div>
+            <div class="app-meta-item">更新日期<b>2026-11-22</b></div>
+        </div>
+
+        <a class="btn btn-primary btn-large app-download-btn"
+           href="download/yuexiang-esports-1.0.2.apk" download>下载安卓安装包（69 KB）</a>
+        <p class="app-hash">SHA-256：5bbd18389e9e2ab15a57312549a64af4397620b9ce1898b0cced509624e5d91e</p>
+
+        <h3>安装步骤</h3>
+        <ol class="app-steps">
+            <li>点上面的按钮下载安装包，手机浏览器若提示「该类型文件可能有害」，选择「仍要下载」。</li>
+            <li>在通知栏或「下载」里打开刚下载好的 APK，系统提示「未知来源」时，允许当前浏览器安装应用，然后返回再装一次。</li>
+            <li>安装完成后打开 App，第一次进入会申请通知权限，点「去开启」并在系统弹窗里允许，否则收不到订单提醒。</li>
+            <li>随后会再引导一次「允许后台运行」（电池优化白名单），建议同意——这是锁屏、切到后台还能收到通知的关键。</li>
+        </ol>
+
+        <h3>App 里有什么</h3>
+        <ul class="app-list">
+            <li>打开即是本站页面，商品、下单、支付截图上传、订单查询都在里面，不用另外记网址。</li>
+            <li>管理后台审核通过的订单，会以系统通知弹到手机上，点通知直接进「订单推送」页接单。</li>
+            <li>打开 App 会自动检查有没有新版本，有新版时弹窗写明新增了什么、修复了什么，问你要不要更新。</li>
+            <li>首页按返回键可以打开菜单：检查更新、修改站点地址、查看并重新开启通知与后台设置、退出 App。</li>
+        </ul>
+
+        <h3>已经装过旧版</h3>
+        <p>装过 1.0.0 或 1.0.1 的，直接安装 1.0.2 覆盖即可，登录状态和站点地址设置都会保留（各版本使用同一个签名）。1.0.2 新增自动检查更新，装上之后再有新版本，App 会自己提示。</p>
+
+        <h3>常见问题</h3>
+        <dl class="app-faq">
+            <dt>怎么知道有新版本？</dt>
+            <dd>打开 App 会自动检查一次，运行期间每隔一段时间也会再看；有新版就弹窗询问。也可以按手机返回键，在菜单里选「检查更新」手动查。</dd>
+            <dt>装完收不到订单通知？</dt>
+            <dd>先确认系统设置里「悦翔电竞」的通知已打开；国产手机还需要在手机管家/权限管理里允许自启动、允许后台运行，并把省电策略设为「无限制」。在系统设置里「强行停止」过 App 的，需要重新手动打开一次。</dd>
+            <dt>安装时提示「应用未安装」？</dt>
+            <dd>说明手机上已有的旧包不是同一签名（比如从别处下载的改包）。先卸载旧版再安装本页的安装包。</dd>
+            <dt>点「上传付款截图」没反应？</dt>
+            <dd>那是 1.0.0 的已知问题，1.0.1 起已修复，装本页的新版即可。</dd>
+            <dt>想换站点地址怎么办？</dt>
+            <dd>在 App 首页按手机返回键，菜单里选「修改站点地址」，填好保存后会立即刷新。</dd>
+        </dl>
+
+        <div class="app-note">
+            提示：App 使用前台服务轮询订单，没有接入厂商推送通道。锁屏、切后台都能收，但系统「强行停止」之后无法自动复活，必须手动打开一次。
+        </div>
+    </div>
+</div>
+<script src="js/common.js"></script>
+<script>initPage();</script>
+</body>
+</html>

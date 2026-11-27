@@ -1,3 +1,0 @@
-CREATE TABLE IF NOT EXISTS feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT DEFAULT '', username TEXT DEFAULT '', category TEXT DEFAULT '', content TEXT DEFAULT '', contact TEXT DEFAULT '', submit_time TEXT DEFAULT '', status TEXT DEFAULT 'pending', reject_reason TEXT DEFAULT '');
-CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback (status);
-CREATE INDEX IF NOT EXISTS idx_feedback_time ON feedback (submit_time DESC);

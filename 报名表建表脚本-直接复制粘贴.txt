@@ -1,3 +1,0 @@
-CREATE TABLE IF NOT EXISTS applications (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT NOT NULL, username TEXT NOT NULL, nickname TEXT DEFAULT '', game_id TEXT DEFAULT '', server_area TEXT DEFAULT '', game_rank TEXT DEFAULT '', specialty TEXT DEFAULT '', contact TEXT DEFAULT '', online_time TEXT DEFAULT '', intro TEXT DEFAULT '', submit_time TEXT DEFAULT '', status TEXT DEFAULT 'pending', reject_reason TEXT DEFAULT '', review_admin TEXT DEFAULT '', review_time TEXT DEFAULT '');
-CREATE INDEX IF NOT EXISTS idx_applications_uid ON applications (uid);
-CREATE INDEX IF NOT EXISTS idx_applications_status ON applications (status);

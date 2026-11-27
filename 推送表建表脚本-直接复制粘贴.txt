@@ -1,3 +1,0 @@
-CREATE TABLE IF NOT EXISTS push_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL, uid TEXT NOT NULL DEFAULT '', username TEXT NOT NULL DEFAULT '', title TEXT NOT NULL DEFAULT '', body TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT '', ack_at TEXT NOT NULL DEFAULT '', read_at TEXT NOT NULL DEFAULT '');
-CREATE UNIQUE INDEX IF NOT EXISTS idx_push_order_uid ON push_messages (order_id, uid);
-CREATE INDEX IF NOT EXISTS idx_push_uid_id ON push_messages (uid, id DESC);

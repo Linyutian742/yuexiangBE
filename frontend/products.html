@@ -13,6 +13,24 @@
         <div class="products-brand">悦翔电竞</div>
         <div class="products-subtitle">军火库 - 代练商品</div>
     </div>
+
+    <!-- 顶部搜索：按名称/关键词模糊匹配，支持多关键词分词 -->
+    <div class="search-panel">
+        <form class="search-box" id="product-search-box" action="products.html" method="get" onsubmit="return onSubmitSearch()">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+            </svg>
+            <input class="search-input" id="product-search" name="q" type="search"
+                   placeholder="搜索商品名称 / 关键词" autocomplete="off"
+                   oninput="onSearchInput(this.value)" onkeydown="onSearchKeydown(event)">
+            <span class="search-clear" id="search-clear" onclick="clearSearch()" title="清空搜索">&#10005;</span>
+        </form>
+        <div class="search-chips" id="search-chips"></div>
+    </div>
+
+    <div class="search-status" id="search-status"></div>
+
     <div class="product-grid" id="product-grid">
         <p style="color:#64748b;">加载中...</p>
     </div>
@@ -26,27 +44,207 @@
 </div>
 <script src="js/common.js"></script>
 <script>
+/* ==================== 搜索状态 ==================== */
+var YX_KEYWORD = '';          // 当前生效的关键词（已去掉首尾空白）
+var YX_ALL = [];              // 全量商品
+var YX_CHIPS = ['保底', '金枪', '保活', '5鸡', '1元', '10元'];
+
 function showRefundTip() {
     alert('请联系客服');
 }
+
+/* 从地址栏读取 q 参数，便于首页搜索直接跳转过来 */
+function getQueryKeyword() {
+    var s = window.location.search || '';
+    var m = /[?&]q=([^&]*)/.exec(s);
+    if (!m) return '';
+    var v = m[1].replace(/\+/g, ' ');
+    try {
+        v = decodeURIComponent(v);
+    } catch (e) { /* 非法编码时按原文处理 */ }
+    return v.replace(/^\s+|\s+$/g, '');
+}
+
+/* 归一化：转小写并去掉所有空白，让“10 元”“10元”等价 */
+function normText(s) {
+    return String(s === null || s === undefined ? '' : s)
+        .toLowerCase()
+        .replace(/\s+/g, '');
+}
+
+/* 关键词分词：空格分隔，逐词都命中才算匹配 */
+function termsOf(kw) {
+    var raw = String(kw === null || kw === undefined ? '' : kw).toLowerCase().split(/\s+/);
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+        if (raw[i]) out.push(raw[i]);
+    }
+    return out;
+}
+
+function escapeReg(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/* 商品是否命中：标题 + 描述 + 价格参与匹配 */
+function matchProduct(p, terms) {
+    if (!terms.length) return true;
+    var hay = normText(p.title) + ' ' + normText(p.description) + ' ' + normText(p.price);
+    for (var i = 0; i < terms.length; i++) {
+        if (hay.indexOf(normText(terms[i])) === -1) return false;
+    }
+    return true;
+}
+
+/* 命中关键词高亮：先转义再包 mark，避免 XSS */
+function highlight(text, terms) {
+    var out = escapeHtml(text === null || text === undefined ? '' : String(text));
+    for (var i = 0; i < terms.length; i++) {
+        var t = terms[i];
+        if (!t) continue;
+        try {
+            out = out.replace(new RegExp('(' + escapeReg(t) + ')', 'gi'), '<mark class="hl">$1</mark>');
+        } catch (e) { /* 正则异常直接放弃高亮，不影响列表 */ }
+    }
+    return out;
+}
+
+/* ==================== 渲染 ==================== */
+function renderChips() {
+    var box = document.getElementById('search-chips');
+    if (!box) return;
+    var html = '';
+    for (var i = 0; i < YX_CHIPS.length; i++) {
+        var c = YX_CHIPS[i];
+        var active = (c === YX_KEYWORD) ? ' active' : '';
+        html += '<button type="button" class="chip' + active + '" onclick="pickChip(\'' + c + '\')">' + escapeHtml(c) + '</button>';
+    }
+    box.innerHTML = html;
+}
+
+function updateClearBtn() {
+    var btn = document.getElementById('search-clear');
+    if (!btn) return;
+    btn.className = YX_KEYWORD ? 'search-clear show' : 'search-clear';
+}
+
+function render() {
+    var grid = document.getElementById('product-grid');
+    var statusEl = document.getElementById('search-status');
+    if (!grid) return;
+
+    var terms = termsOf(YX_KEYWORD);
+    var list = [];
+    for (var i = 0; i < YX_ALL.length; i++) {
+        if (matchProduct(YX_ALL[i], terms)) list.push(YX_ALL[i]);
+    }
+
+    // 统计信息
+    if (statusEl) {
+        if (!YX_ALL.length) {
+            statusEl.innerHTML = '';
+        } else if (!terms.length) {
+            statusEl.innerHTML = '共 ' + YX_ALL.length + ' 件商品';
+        } else if (!list.length) {
+            statusEl.innerHTML = '没有与「<span class="kw">' + escapeHtml(YX_KEYWORD) + '</span>」相关的商品';
+        } else {
+            statusEl.innerHTML = '找到 ' + list.length + ' 件与「<span class="kw">' + escapeHtml(YX_KEYWORD) + '</span>」相关的商品';
+        }
+    }
+
+    // 空态
+    if (!YX_ALL.length) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-title">暂无商品</div>' +
+            '<div class="empty-sub">请稍后再来看看</div></div>';
+        return;
+    }
+    if (!list.length) {
+        grid.innerHTML = '<div class="empty-state">' +
+            '<div class="empty-title">未找到相关商品</div>' +
+            '<div class="empty-sub">换个关键词试试，或清空搜索查看全部商品</div>' +
+            '<div style="margin-top:16px;"><button class="btn btn-secondary btn-small" onclick="clearSearch()">清空搜索看全部</button></div>' +
+            '</div>';
+        return;
+    }
+
+    var html = '';
+    for (var j = 0; j < list.length; j++) {
+        var p = list[j];
+        html += '<div class="product-card">';
+        html += '<div class="product-title">' + highlight(p.title, terms) + '</div>';
+        html += '<div class="product-price">' + escapeHtml(p.price) + '<span class="product-price-unit"> 元</span></div>';
+        html += '<div class="product-desc">' + highlight(p.description || '', terms) + '</div>';
+        html += '<button class="btn btn-primary btn-small product-buy-btn" onclick="buyProduct(\'' + escapeHtml(p.title) + '\', \'' + escapeHtml(p.price) + '\')">购买</button>';
+        html += '</div>';
+    }
+    grid.innerHTML = html;
+}
+
+/* ==================== 搜索交互 ==================== */
+function applySearch(kw, fromInput) {
+    YX_KEYWORD = String(kw === null || kw === undefined ? '' : kw).replace(/^\s+|\s+$/g, '');
+    var input = document.getElementById('product-search');
+    if (input && !fromInput && input.value !== YX_KEYWORD) input.value = YX_KEYWORD;
+    updateClearBtn();
+    renderChips();
+    render();
+    syncUrl(YX_KEYWORD);
+}
+
+/* 地址栏同步：刷新/分享后仍能还原搜索状态 */
+function syncUrl(kw) {
+    try {
+        if (!window.history || !window.history.replaceState) return;
+        var url = window.location.pathname + (kw ? ('?q=' + encodeURIComponent(kw)) : '');
+        window.history.replaceState(null, '', url);
+    } catch (e) { /* file:// 等场景忽略 */ }
+}
+
+function onSearchInput(v) {
+    applySearch(v, true);
+}
+
+function onSearchKeydown(e) {
+    var ev = e || window.event;
+    if (ev && (ev.keyCode === 13 || ev.key === 'Enter')) {
+        if (ev.preventDefault) ev.preventDefault();
+        // 收起手机输入法，结果已实时刷新
+        var input = document.getElementById('product-search');
+        if (input && input.blur) input.blur();
+        return false;
+    }
+}
+
+/* 表单提交（点“搜索”或无 JS 场景）：阻止刷新，交给实时结果 */
+function onSubmitSearch() {
+    var input = document.getElementById('product-search');
+    applySearch(input ? input.value : '', true);
+    var el = input || document.getElementById('product-search');
+    if (el && el.blur) el.blur();
+    return false;
+}
+
+function pickChip(kw) {
+    applySearch(kw, false);
+}
+
+function clearSearch() {
+    applySearch('', false);
+}
+
+/* ==================== 数据加载 ==================== */
 function loadProducts() {
-    ajaxGet('data/products.json', function (resp) {
-        var grid = document.getElementById('product-grid');
-        if (!resp.success || !resp.products || resp.products.length === 0) {
-            grid.innerHTML = '<p style="color:#64748b;">暂无商品</p>';
+    // 优先走接口（管理员后台新增的商品能实时出现），失败或为空时退回本地兜底数据
+    ajaxGet('/api/products', function (resp) {
+        if (resp && resp.success && resp.products && resp.products.length) {
+            YX_ALL = resp.products;
+            render();
             return;
         }
-        var html = '';
-        for (var i = 0; i < resp.products.length; i++) {
-            var p = resp.products[i];
-            html += '<div class="product-card">';
-            html += '<div class="product-title">' + p.title + '</div>';
-            html += '<div class="product-price">' + p.price + '<span class="product-price-unit"> 元</span></div>';
-            html += '<div class="product-desc">' + (p.description || '') + '</div>';
-            html += '<button class="btn btn-primary btn-small product-buy-btn" onclick="buyProduct(\'' + p.title + '\', \'' + p.price + '\')">购买</button>';
-            html += '</div>';
-        }
-        grid.innerHTML = html;
+        ajaxGet('data/products.json', function (local) {
+            YX_ALL = (local && local.success && local.products) ? local.products : [];
+            render();
+        });
     });
 }
 
@@ -62,7 +260,24 @@ function buyProduct(title, price) {
     window.location.href = 'pay.html';
 }
 
-initPage(loadProducts);
+/* ==================== 初始化 ==================== */
+initPage(function () {
+    YX_KEYWORD = getQueryKeyword();
+    var input = document.getElementById('product-search');
+    if (input && YX_KEYWORD) input.value = YX_KEYWORD;
+
+    // 搜索框聚焦时描边高亮（兼容不支持 :focus-within 的老 WebView）
+    var box = document.getElementById('product-search-box');
+    if (box && input) {
+        input.onfocus = function () { box.className = 'search-box focus'; };
+        input.onblur = function () { box.className = 'search-box'; };
+    }
+
+    updateClearBtn();
+    renderChips();
+    render();          // 先渲染骨架，避免等待接口时空白
+    loadProducts();
+});
 </script>
 </body>
 </html>

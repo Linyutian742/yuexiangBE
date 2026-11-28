@@ -32,6 +32,9 @@
 .index-bg .index-subtitle {
     animation: yxFadeUp 1.2s ease-out 0.7s both;
 }
+.index-bg .index-search-wrap {
+    animation: yxFadeUp 1.2s ease-out 0.95s both;
+}
 .index-bg .index-btn {
     animation: yxFadeUp 1.2s ease-out 1.05s both;
 }
@@ -115,6 +118,16 @@
 <div class="index-bg">
     <div class="index-title">悦翔电竞</div>
     <div class="index-subtitle">和平精英专业代练接单平台</div>
+    <div class="index-search-wrap" style="width:100%;max-width:380px;">
+        <form class="search-box index-search" id="home-search-box" action="products.html" method="get" onsubmit="return homeSearch()">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+            </svg>
+            <input class="search-input" id="home-search" name="q" type="search" placeholder="搜索商品名称 / 关键词" autocomplete="off">
+            <button class="search-btn" type="submit">搜索</button>
+        </form>
+    </div>
     <button class="index-btn" onclick="window.location.href='products.html'">立刻点单</button>
     <button class="index-btn index-btn-join" onclick="window.location.href='join.html'">加入我们</button>
     <div class="index-decoration">
@@ -125,6 +138,13 @@
 </div>
 <script src="js/common.js"></script>
 <script>
+// 首页搜索：提交后带 q 参数跳到商品页（JS 不可用时表单 GET 同样可用）
+function homeSearch() {
+    var el = document.getElementById('home-search');
+    var kw = el ? String(el.value).replace(/^\s+|\s+$/g, '') : '';
+    window.location.href = kw ? ('products.html?q=' + encodeURIComponent(kw)) : 'products.html';
+    return false;
+}
 initPage();
 </script>
 </body>

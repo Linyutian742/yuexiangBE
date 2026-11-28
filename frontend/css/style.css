@@ -1711,3 +1711,195 @@ a.mz-item:hover {
         padding: 12px;
     }
 }
+
+/* ==================== 商品搜索 ==================== */
+/* 首页入口与商品页顶部共用的搜索框，配色沿用站点深色紫主题 */
+.search-panel {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.search-box {
+    position: relative;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-align-items: center;
+    align-items: center;
+    height: 46px;
+    padding: 0 12px;
+    background: #141422;
+    border: 1px solid #2a2a3e;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-box.focus,
+.search-box:focus-within {
+    border-color: #a855f7;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+}
+
+.search-icon {
+    -webkit-flex: 0 0 18px;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    color: #64748b;
+}
+
+.search-input {
+    -webkit-flex: 1;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 8px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #e2e8f0;
+    font-size: 16px;
+    font-family: inherit;
+}
+
+.search-input::placeholder {
+    color: #475569;
+}
+
+/* 去掉 type=search 自带的清除按钮，改用统一的 .search-clear */
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
+
+.search-clear {
+    display: none;
+    padding: 0 6px;
+    color: #64748b;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.search-clear.show {
+    display: block;
+}
+
+.search-clear:hover {
+    color: #a855f7;
+}
+
+.search-btn {
+    height: 32px;
+    padding: 0 16px;
+    background: #a855f7;
+    color: #fff;
+    border: none;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.search-btn:hover {
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+}
+
+/* 热门关键词快捷标签 */
+.search-chips {
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-wrap: wrap;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.chip {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid #2a2a3e;
+    color: #94a3b8;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chip:hover {
+    border-color: #a855f7;
+    color: #a855f7;
+}
+
+.chip.active {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: #a855f7;
+    color: #a855f7;
+}
+
+/* 搜索结果统计 */
+.search-status {
+    max-width: 900px;
+    margin: 16px auto 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.search-status .kw {
+    color: #a855f7;
+}
+
+/* 无结果空态 */
+.empty-state {
+    width: 100%;
+    padding: 48px 0;
+    text-align: center;
+}
+
+.empty-state .empty-title {
+    color: #94a3b8;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.empty-state .empty-sub {
+    color: #475569;
+    font-size: 13px;
+}
+
+/* 命中关键词高亮 */
+mark.hl {
+    padding: 0 2px;
+    background: rgba(168, 85, 247, 0.28);
+    color: #e9d5ff;
+}
+
+/* 首页搜索入口 */
+.index-search {
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto 28px;
+}
+
+@media screen and (max-width: 768px) {
+    .search-box {
+        height: 44px;
+        padding: 0 10px;
+    }
+    .search-btn {
+        padding: 0 12px;
+    }
+    .index-search {
+        margin-bottom: 24px;
+    }
+}
+
+@media screen and (max-width: 360px) {
+    .search-btn {
+        padding: 0 10px;
+        font-size: 13px;
+    }
+    .chip {
+        padding: 4px 10px;
+        font-size: 12px;
+    }
+}

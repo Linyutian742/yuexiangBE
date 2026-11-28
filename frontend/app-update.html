@@ -13,18 +13,26 @@
 -->
 <script type="application/json" id="app-update-data">
 {
-  "versionCode": 3,
-  "versionName": "1.0.2",
-  "apkUrl": "download/yuexiang-esports-1.0.2.apk",
+  "versionCode": 5,
+  "versionName": "1.0.4",
+  "apkUrl": "download/yuexiang-esports-1.0.4.apk",
   "downloadPage": "app-download.html",
-  "publishedAt": "2026-11-22",
+  "publishedAt": "2026-11-28",
   "force": false,
   "notes": {
     "added": [
-      "打开 App 会自动检查新版本，发现新版时弹窗询问是否更新",
-      "按返回键的菜单里新增「检查更新」，可以随时手动检查"
+      "界面整体改成拼多多式：顶部搜索框 + 双列商品卡，价格与「立即下单」按钮直接在卡上",
+      "底部固定五个入口：首页、打手、举报、反映、个人中心",
+      "新增打手页，能看到在岗打手名单，下单备注写名字即可指定",
+      "新增举报页，可填被举报对象与原因提交给后台",
+      "新增意见反映页，按类型填写内容提交，可选留联系方式",
+      "搜索支持空格分词与关键词高亮，搜不到时给出空态提示"
     ],
-    "fixed": []
+    "fixed": [
+      "修复旧版搜索只在商品页生效、首页与商品页商品数量不一致的问题",
+      "修复商品加载失败时误报「暂无商品」的问题，改为提示重试",
+      "修复部分页面在窄屏下横向溢出、按钮被挤出屏幕的问题"
+    ]
   }
 }
 </script>
@@ -97,20 +105,28 @@
 <div class="main-content">
     <div class="static-page upd-page">
         <h2>版本信息</h2>
-        <div class="upd-row"><span>最新版本</span><b>1.0.2</b></div>
-        <div class="upd-row"><span>版本号</span><b>3</b></div>
-        <div class="upd-row"><span>发布时间</span><b>2026-11-22</b></div>
+        <div class="upd-row"><span>最新版本</span><b>1.0.4</b></div>
+        <div class="upd-row"><span>版本号</span><b>5</b></div>
+        <div class="upd-row"><span>发布时间</span><b>2026-11-28</b></div>
 
         <h3>本次新增</h3>
         <ul>
-            <li>打开 App 会自动检查新版本，发现新版时弹窗询问是否更新</li>
-            <li>按返回键的菜单里新增「检查更新」，可以随时手动检查</li>
+            <li>界面整体改成拼多多式：顶部搜索框 + 双列商品卡，价格与「立即下单」按钮直接在卡上</li>
+            <li>底部固定五个入口：首页、打手、举报、反映、个人中心</li>
+            <li>新增打手页，能看到在岗打手名单，下单备注写名字即可指定</li>
+            <li>新增举报页，可填被举报对象与原因提交给后台</li>
+            <li>新增意见反映页，按类型填写内容提交，可选留联系方式</li>
+            <li>搜索支持空格分词与关键词高亮，搜不到时给出空态提示</li>
         </ul>
 
         <h3>本次修复</h3>
-        <p class="upd-none">本次没有修复项，只新增了自动检查更新。</p>
+        <ul>
+            <li>修复旧版搜索只在商品页生效、首页与商品页商品数量不一致的问题</li>
+            <li>修复商品加载失败时误报「暂无商品」的问题，改为提示重试</li>
+            <li>修复部分页面在窄屏下横向溢出、按钮被挤出屏幕的问题</li>
+        </ul>
 
-        <p class="upd-get"><a class="btn btn-primary" href="download/yuexiang-esports-1.0.2.apk" download>下载 1.0.2 安装包（69 KB）</a></p>
+        <p class="upd-get"><a class="btn btn-primary" href="download/yuexiang-esports-1.0.4.apk" download>下载 1.0.4 安装包（322 KB）</a></p>
         <p class="upd-more">手机不方便直接装？到 <a href="app-download.html">App 下载页</a> 看安装步骤与校验值。</p>
 
         <p class="upd-tip">此页供客户端检查更新使用，未在站点导航中开放。</p>

@@ -1873,12 +1873,7 @@ mark.hl {
     color: #e9d5ff;
 }
 
-/* 首页搜索入口 */
-.index-search {
-    width: 100%;
-    max-width: 380px;
-    margin: 0 auto 28px;
-}
+/* 搜索框只在商品页使用，首页不设搜索入口 */
 
 @media screen and (max-width: 768px) {
     .search-box {
@@ -1887,9 +1882,6 @@ mark.hl {
     }
     .search-btn {
         padding: 0 12px;
-    }
-    .index-search {
-        margin-bottom: 24px;
     }
 }
 

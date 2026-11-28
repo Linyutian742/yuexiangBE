@@ -47,6 +47,7 @@
 /* ==================== 搜索状态 ==================== */
 var YX_KEYWORD = '';          // 当前生效的关键词（已去掉首尾空白）
 var YX_ALL = [];              // 全量商品
+var YX_FAILED = false;        // 数据确实取不到（区分“确实没商品”和“加载失败”）
 var YX_CHIPS = ['保底', '金枪', '保活', '5鸡', '1元', '10元'];
 
 function showRefundTip() {
@@ -154,8 +155,16 @@ function render() {
 
     // 空态
     if (!YX_ALL.length) {
-        grid.innerHTML = '<div class="empty-state"><div class="empty-title">暂无商品</div>' +
-            '<div class="empty-sub">请稍后再来看看</div></div>';
+        if (YX_FAILED) {
+            grid.innerHTML = '<div class="empty-state">' +
+                '<div class="empty-title">商品加载失败</div>' +
+                '<div class="empty-sub">网络或页面环境异常，请刷新后重试</div>' +
+                '<div style="margin-top:16px;"><button class="btn btn-secondary btn-small" onclick="retryLoad()">重新加载</button></div>' +
+                '</div>';
+        } else {
+            grid.innerHTML = '<div class="empty-state"><div class="empty-title">暂无商品</div>' +
+                '<div class="empty-sub">请稍后再来看看</div></div>';
+        }
         return;
     }
     if (!list.length) {
@@ -233,19 +242,35 @@ function clearSearch() {
 }
 
 /* ==================== 数据加载 ==================== */
+/*
+ * 商品数据以 data/products.json 为准（站点一直以来的展示数据）。
+ * 注意：不要再优先读 /api/products —— 该接口读的是 D1 商品表，
+ * 表里目前只有测试数据（如标题“78”），会覆盖掉正式商品导致列表显示异常。
+ */
 function loadProducts() {
-    // 优先走接口（管理员后台新增的商品能实时出现），失败或为空时退回本地兜底数据
-    ajaxGet('/api/products', function (resp) {
-        if (resp && resp.success && resp.products && resp.products.length) {
-            YX_ALL = resp.products;
+    ajaxGet('data/products.json', function (local) {
+        YX_ALL = (local && local.success && local.products) ? local.products : [];
+        if (YX_ALL.length) {
+            YX_FAILED = false;
             render();
             return;
         }
-        ajaxGet('data/products.json', function (local) {
-            YX_ALL = (local && local.success && local.products) ? local.products : [];
+        // 静态数据异常时再退一步尝试接口，保证页面不至于空白
+        ajaxGet('/api/products', function (resp) {
+            YX_ALL = (resp && resp.success && resp.products) ? resp.products : [];
+            // 两条路都没数据：标记为加载失败，提示里给出重试入口，而不是假装“暂无商品”
+            YX_FAILED = !YX_ALL.length;
             render();
         });
     });
+}
+
+/* 加载失败时的重试：恢复初始提示并重新拉取数据 */
+function retryLoad() {
+    YX_FAILED = false;
+    var grid = document.getElementById('product-grid');
+    if (grid) grid.innerHTML = '<p style="color:#64748b;">加载中...</p>';
+    loadProducts();
 }
 
 function buyProduct(title, price) {
